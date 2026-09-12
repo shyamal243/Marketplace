@@ -56,6 +56,34 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.post("/demands", async (req, res) => {
+  try {
+    const { title, description, budget, buyerId } = req.body;
+
+    const demand = await db.orm.public.Demand.create({
+      title,
+      description,
+      budget,
+      buyerId,
+    });
+
+    res.status(201).json(demand);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/demands", async (req, res) => {
+  try {
+    const demands = await db.orm.public.Demand.where({}).all();
+    res.status(200).json(demands);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
