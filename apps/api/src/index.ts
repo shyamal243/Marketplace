@@ -1,6 +1,31 @@
 import express from "express";
 import bcrypt from "bcrypt";
 import { db } from "./prisma/db";
+import jwt from "jsonwebtoken";
+
+interface AuthRequest extends express.Request {
+  userId?: number;
+  userRole?: string;
+}
+
+function requireAuth(req: AuthRequest, res: express.Response, next: express.NextFunction) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number; role: string };
+    req.userId = decoded.userId;
+    req.userRole = decoded.role;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
+}
 
 const app = express();
 const PORT = 4000;
@@ -48,23 +73,30 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
+    const token = jwt.sign(
+      { userId: user.id, role: user.role },
+      process.env.JWT_SECRET!,
+      { expiresIn: "7d" }
+    );
+
     const { password: _, ...userWithoutPassword } = user;
-    res.status(200).json(userWithoutPassword);
+    res.status(200).json({ user: userWithoutPassword, token });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-app.post("/demands", async (req, res) => {
+app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { title, description, budget, buyerId } = req.body;
+    const { title, description, budget } = req.body;
 
     const demand = await db.orm.public.Demand.create({
       title,
       description,
       budget,
-      buyerId,
+      buyerId: req.userId!,
     });
 
     res.status(201).json(demand);
