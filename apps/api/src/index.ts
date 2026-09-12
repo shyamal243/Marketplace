@@ -116,6 +116,37 @@ app.get("/demands", async (req, res) => {
   }
 });
 
+app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { demandId, amount, message } = req.body;
+
+    const bid = await db.orm.public.Bid.create({
+      demandId,
+      amount,
+      message,
+      sellerId: req.userId!,
+    });
+
+    res.status(201).json(bid);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/demands/:id/bids", async (req, res) => {
+  try {
+    const demandId = Number(req.params.id);
+
+    const bids = await db.orm.public.Bid.where({ demandId }).all();
+
+    res.status(200).json(bids);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
