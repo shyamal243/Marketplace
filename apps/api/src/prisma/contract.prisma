@@ -1,0 +1,57 @@
+// use prisma-next
+model User {
+  id             Int               @id @default(autoincrement())
+  email          String            @unique
+  password       String
+  name           String
+  role           String            @default("buyer") // "buyer" or "seller"
+  demands        Demand[]
+  bids           Bid[]
+  ordersAsBuyer  Order[]           @relation("OrderBuyer")
+  ordersAsSeller Order[]           @relation("OrderSeller")
+  createdAt      TimestamptzString @default(now())
+  updatedAt      TimestamptzString @default(now())
+}
+
+model Demand {
+  id          Int               @id @default(autoincrement())
+  title       String
+  description String?
+  budget      Int?
+  status      String            @default("open") // "open", "closed", "fulfilled"
+  buyer       User              @relation(fields:[buyerId], references:[id])
+  buyerId     Int
+  bids        Bid[]
+  orders      Order[]
+  createdAt   TimestamptzString @default(now())
+  updatedAt   TimestamptzString @default(now())
+}
+
+model Bid {
+  id        Int               @id @default(autoincrement())
+  amount    Int
+  message   String?
+  status    String            @default("pending") // "pending", "accepted", "rejected"
+  demand    Demand            @relation(fields:[demandId], references:[id])
+  demandId  Int
+  seller    User              @relation(fields:[sellerId], references:[id])
+  sellerId  Int
+  createdAt TimestamptzString @default(now())
+  updatedAt TimestamptzString @default(now())
+}
+
+model Order {
+  id        Int               @id @default(autoincrement())
+  amount    Int
+  status    String            @default("confirmed") // "confirmed", "shipped", "delivered", "cancelled"
+  demand    Demand            @relation(fields:[demandId], references:[id])
+  demandId  Int
+  bid       Bid               @relation(fields:[bidId], references:[id])
+  bidId     Int
+  buyer     User              @relation("OrderBuyer", fields:[buyerId], references:[id])
+  buyerId   Int
+  seller    User              @relation("OrderSeller", fields:[sellerId], references:[id])
+  sellerId  Int
+  createdAt TimestamptzString @default(now())
+  updatedAt TimestamptzString @default(now())
+}
