@@ -1,0 +1,287 @@
+[
+  {
+    "id": "table.review",
+    "label": "Create table \"review\"",
+    "summary": "Creates table \"review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"review\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"review\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"review\"",
+        "sql": "CREATE TABLE \"public\".\"review\" (\n  \"comment\" text,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"orderId\" int4 NOT NULL,\n  \"rating\" int4 NOT NULL,\n  \"revieweeId\" int4 NOT NULL,\n  \"reviewerId\" int4 NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"review\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"review\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.review.review_orderId_key",
+    "label": "Add unique constraint on \"review\" (orderId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "review_orderId_key",
+        "table": "review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"review_orderId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_orderId_key",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"review_orderId_key\"",
+        "sql": "ALTER TABLE \"public\".\"review\" ADD CONSTRAINT \"review_orderId_key\" UNIQUE (\"orderId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"review_orderId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_orderId_key",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.review.review_revieweeId_idx_00d8b149",
+    "label": "Create index \"review_revieweeId_idx_00d8b149\" on \"review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "review_revieweeId_idx_00d8b149",
+        "table": "review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"review_revieweeId_idx_00d8b149\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"review_revieweeId_idx_00d8b149\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"review_revieweeId_idx_00d8b149\"",
+        "sql": "CREATE INDEX \"review_revieweeId_idx_00d8b149\" ON \"public\".\"review\" (\"revieweeId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"review_revieweeId_idx_00d8b149\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"review_revieweeId_idx_00d8b149\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.review.review_reviewerId_idx_25a27b4e",
+    "label": "Create index \"review_reviewerId_idx_25a27b4e\" on \"review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "review_reviewerId_idx_25a27b4e",
+        "table": "review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"review_reviewerId_idx_25a27b4e\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"review_reviewerId_idx_25a27b4e\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"review_reviewerId_idx_25a27b4e\"",
+        "sql": "CREATE INDEX \"review_reviewerId_idx_25a27b4e\" ON \"public\".\"review\" (\"reviewerId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"review_reviewerId_idx_25a27b4e\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"review_reviewerId_idx_25a27b4e\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.review.review_orderId_fkey",
+    "label": "Add foreign key \"review_orderId_fkey\" on \"review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "review_orderId_fkey",
+        "table": "review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"review_orderId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_orderId_fkey",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"review_orderId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"review\"\nADD CONSTRAINT \"review_orderId_fkey\"\nFOREIGN KEY (\"orderId\")\nREFERENCES \"public\".\"order\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"review_orderId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_orderId_fkey",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.review.review_reviewerId_fkey",
+    "label": "Add foreign key \"review_reviewerId_fkey\" on \"review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "review_reviewerId_fkey",
+        "table": "review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"review_reviewerId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_reviewerId_fkey",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"review_reviewerId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"review\"\nADD CONSTRAINT \"review_reviewerId_fkey\"\nFOREIGN KEY (\"reviewerId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"review_reviewerId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_reviewerId_fkey",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.review.review_revieweeId_fkey",
+    "label": "Add foreign key \"review_revieweeId_fkey\" on \"review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "review_revieweeId_fkey",
+        "table": "review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"review_revieweeId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_revieweeId_fkey",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"review_revieweeId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"review\"\nADD CONSTRAINT \"review_revieweeId_fkey\"\nFOREIGN KEY (\"revieweeId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"review_revieweeId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_revieweeId_fkey",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ]
+  }
+]

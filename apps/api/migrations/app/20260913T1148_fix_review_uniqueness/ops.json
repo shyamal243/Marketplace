@@ -1,0 +1,125 @@
+[
+  {
+    "id": "dropConstraint.review.review_orderId_key",
+    "label": "Drop constraint \"review_orderId_key\" on \"review\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "review_orderId_key",
+        "table": "review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"review_orderId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_orderId_key",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop constraint \"review_orderId_key\"",
+        "sql": "ALTER TABLE \"public\".\"review\" DROP CONSTRAINT \"review_orderId_key\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"review_orderId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_orderId_key",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.review.review_orderId_reviewerId_key",
+    "label": "Add unique constraint on \"review\" (orderId, reviewerId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "review_orderId_reviewerId_key",
+        "table": "review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"review_orderId_reviewerId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_orderId_reviewerId_key",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"review_orderId_reviewerId_key\"",
+        "sql": "ALTER TABLE \"public\".\"review\" ADD CONSTRAINT \"review_orderId_reviewerId_key\" UNIQUE (\"orderId\", \"reviewerId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"review_orderId_reviewerId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "review_orderId_reviewerId_key",
+          "public",
+          "\"public\".\"review\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.review.review_orderId_idx_d284871b",
+    "label": "Create index \"review_orderId_idx_d284871b\" on \"review\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "review_orderId_idx_d284871b",
+        "table": "review"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"review_orderId_idx_d284871b\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"review_orderId_idx_d284871b\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"review_orderId_idx_d284871b\"",
+        "sql": "CREATE INDEX \"review_orderId_idx_d284871b\" ON \"public\".\"review\" (\"orderId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"review_orderId_idx_d284871b\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"review_orderId_idx_d284871b\""
+        ]
+      }
+    ]
+  }
+]

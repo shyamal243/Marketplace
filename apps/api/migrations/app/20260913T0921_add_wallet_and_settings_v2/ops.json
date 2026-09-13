@@ -1,0 +1,329 @@
+[
+  {
+    "id": "table.platformSetting",
+    "label": "Create table \"platformSetting\"",
+    "summary": "Creates table \"platformSetting\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "platformSetting"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"platformSetting\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"platformSetting\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"platformSetting\"",
+        "sql": "CREATE TABLE \"public\".\"platformSetting\" (\n  \"id\" SERIAL NOT NULL,\n  \"key\" text NOT NULL,\n  \"value\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"platformSetting\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"platformSetting\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.walletTransaction",
+    "label": "Create table \"walletTransaction\"",
+    "summary": "Creates table \"walletTransaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "walletTransaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"walletTransaction\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"walletTransaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"walletTransaction\"",
+        "sql": "CREATE TABLE \"public\".\"walletTransaction\" (\n  \"amount\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"reason\" text NOT NULL,\n  \"type\" text NOT NULL,\n  \"userId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"walletTransaction\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"walletTransaction\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.demand.bookingFeeAmount",
+    "label": "Add column \"bookingFeeAmount\" to \"demand\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "bookingFeeAmount",
+        "table": "demand"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"bookingFeeAmount\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "bookingFeeAmount"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"bookingFeeAmount\"",
+        "sql": "ALTER TABLE \"public\".\"demand\" ADD COLUMN \"bookingFeeAmount\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"bookingFeeAmount\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "bookingFeeAmount"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.demand.bookingFeePaid",
+    "label": "Add column \"bookingFeePaid\" to \"demand\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "bookingFeePaid",
+        "table": "demand"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"bookingFeePaid\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "bookingFeePaid"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"bookingFeePaid\"",
+        "sql": "ALTER TABLE \"public\".\"demand\" ADD COLUMN \"bookingFeePaid\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"bookingFeePaid\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "bookingFeePaid"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.user.walletBalance",
+    "label": "Add column \"walletBalance\" to \"user\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "walletBalance",
+        "table": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"walletBalance\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "walletBalance"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"walletBalance\"",
+        "sql": "ALTER TABLE \"public\".\"user\" ADD COLUMN \"walletBalance\" int4 DEFAULT 0 NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"walletBalance\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "walletBalance"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.platformSetting.platformSetting_key_key",
+    "label": "Add unique constraint on \"platformSetting\" (key)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "platformSetting_key_key",
+        "table": "platformSetting"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"platformSetting_key_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "platformSetting_key_key",
+          "public",
+          "\"public\".\"platformSetting\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"platformSetting_key_key\"",
+        "sql": "ALTER TABLE \"public\".\"platformSetting\" ADD CONSTRAINT \"platformSetting_key_key\" UNIQUE (\"key\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"platformSetting_key_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "platformSetting_key_key",
+          "public",
+          "\"public\".\"platformSetting\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.walletTransaction.walletTransaction_userId_idx_a489d58a",
+    "label": "Create index \"walletTransaction_userId_idx_a489d58a\" on \"walletTransaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "walletTransaction_userId_idx_a489d58a",
+        "table": "walletTransaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"walletTransaction_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"walletTransaction_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"walletTransaction_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"walletTransaction_userId_idx_a489d58a\" ON \"public\".\"walletTransaction\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"walletTransaction_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"walletTransaction_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.walletTransaction.walletTransaction_userId_fkey",
+    "label": "Add foreign key \"walletTransaction_userId_fkey\" on \"walletTransaction\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "walletTransaction_userId_fkey",
+        "table": "walletTransaction"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"walletTransaction_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "walletTransaction_userId_fkey",
+          "public",
+          "\"public\".\"walletTransaction\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"walletTransaction_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"walletTransaction\"\nADD CONSTRAINT \"walletTransaction_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"walletTransaction_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "walletTransaction_userId_fkey",
+          "public",
+          "\"public\".\"walletTransaction\""
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,83 @@
+[
+  {
+    "id": "table.blockedToken",
+    "label": "Create table \"blockedToken\"",
+    "summary": "Creates table \"blockedToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "blockedToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"blockedToken\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"blockedToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"blockedToken\"",
+        "sql": "CREATE TABLE \"public\".\"blockedToken\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"token\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"blockedToken\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"blockedToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.blockedToken.blockedToken_token_key",
+    "label": "Add unique constraint on \"blockedToken\" (token)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "blockedToken_token_key",
+        "table": "blockedToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"blockedToken_token_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "blockedToken_token_key",
+          "public",
+          "\"public\".\"blockedToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"blockedToken_token_key\"",
+        "sql": "ALTER TABLE \"public\".\"blockedToken\" ADD CONSTRAINT \"blockedToken_token_key\" UNIQUE (\"token\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"blockedToken_token_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "blockedToken_token_key",
+          "public",
+          "\"public\".\"blockedToken\""
+        ]
+      }
+    ]
+  }
+]

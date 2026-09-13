@@ -1,0 +1,162 @@
+// use prisma-next
+model User {
+  id              Int                  @id @default(autoincrement())
+  email           String               @unique
+  password        String
+  name            String
+  role            String               @default("buyer") // "buyer" or "seller"
+  demands         Demand[]
+  bids            Bid[]
+  ordersAsBuyer   Order[]              @relation("OrderBuyer")
+  ordersAsSeller  Order[]              @relation("OrderSeller")
+  reviewsGiven    Review[]             @relation("ReviewsGiven")
+  reviewsReceived Review[]             @relation("ReviewsReceived")
+  notifications   Notification[]
+  walletBalance   Int                  @default(0)
+  walletTxns      WalletTransaction[]
+  products        Product[]
+  productRatings  ProductRating[]
+  passwordResets  PasswordResetToken[]
+
+  createdAt       TimestamptzString    @default(now())
+  updatedAt       TimestamptzString    @default(now())
+}
+
+model Demand {
+  id                 Int                @id @default(autoincrement())
+  title              String
+  description        String?
+  budget             Int?
+  status             String             @default("open") // "pending_payment", "open", "closed", "fulfilled"
+  bookingFeeAmount   Int?
+  bookingFeePaid     Boolean            @default(false)
+  bidWindowExpiresAt TimestamptzString?
+  buyer              User               @relation(fields:[buyerId], references:[id])
+  buyerId            Int
+  bids               Bid[]
+  orders             Order[]
+  createdAt          TimestamptzString  @default(now())
+  updatedAt          TimestamptzString  @default(now())
+}
+
+model Bid {
+  id        Int               @id @default(autoincrement())
+  amount    Int
+  message   String?
+  status    String            @default("pending") // "pending", "accepted", "rejected"
+  demand    Demand            @relation(fields:[demandId], references:[id])
+  demandId  Int
+  seller    User              @relation(fields:[sellerId], references:[id])
+  sellerId  Int
+  createdAt TimestamptzString @default(now())
+  updatedAt TimestamptzString @default(now())
+}
+
+model Order {
+  id        Int               @id @default(autoincrement())
+  amount    Int
+  status    String            @default("confirmed") // "confirmed", "shipped", "delivered", "cancelled"
+  isPaid    Boolean           @default(false)
+  demand    Demand            @relation(fields:[demandId], references:[id])
+  demandId  Int
+  bid       Bid               @relation(fields:[bidId], references:[id])
+  bidId     Int
+  buyer     User              @relation("OrderBuyer", fields:[buyerId], references:[id])
+  buyerId   Int
+  seller    User              @relation("OrderSeller", fields:[sellerId], references:[id])
+  sellerId  Int
+  review    Review[]
+  createdAt TimestamptzString @default(now())
+  updatedAt TimestamptzString @default(now())
+}
+
+model Review {
+  id         Int               @id @default(autoincrement())
+  rating     Int
+  comment    String?
+  order      Order             @relation(fields:[orderId], references:[id])
+  orderId    Int
+  reviewer   User              @relation("ReviewsGiven", fields:[reviewerId], references:[id])
+  reviewerId Int
+  reviewee   User              @relation("ReviewsReceived", fields:[revieweeId], references:[id])
+  revieweeId Int
+  createdAt  TimestamptzString @default(now())
+  updatedAt  TimestamptzString @default(now())
+
+  @@unique([orderId, reviewerId])
+}
+
+model Notification {
+  id        Int               @id @default(autoincrement())
+  message   String
+  type      String // "new_bid", "bid_accepted", "bid_rejected", "order_shipped", "order_delivered"
+  isRead    Boolean           @default(false)
+  user      User              @relation(fields:[userId], references:[id])
+  userId    Int
+  createdAt TimestamptzString @default(now())
+}
+
+model PlatformSetting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model WalletTransaction {
+  id        Int               @id @default(autoincrement())
+  amount    Int
+  type      String // "credit" or "debit"
+  reason    String // "topup", "booking_fee", "booking_fee_refund", "order_payment", "admin_adjustment"
+  user      User              @relation(fields:[userId], references:[id])
+  userId    Int
+  createdAt TimestamptzString @default(now())
+}
+
+model Product {
+  id          Int               @id @default(autoincrement())
+  name        String
+  description String?
+  price       Int
+  stock       Int               @default(0)
+  isActive    Boolean           @default(true)
+  seller      User              @relation(fields:[sellerId], references:[id])
+  sellerId    Int
+  ratings     ProductRating[]
+  createdAt   TimestamptzString @default(now())
+  updatedAt   TimestamptzString @default(now())
+}
+
+model ProductRating {
+  id         Int               @id @default(autoincrement())
+  rating     Int
+  comment    String?
+  product    Product           @relation(fields:[productId], references:[id])
+  productId  Int
+  customer   User              @relation(fields:[customerId], references:[id])
+  customerId Int
+  createdAt  TimestamptzString @default(now())
+
+  @@unique([productId, customerId])
+}
+
+model BlockedToken {
+  id        Int               @id @default(autoincrement())
+  token     String            @unique
+  createdAt TimestamptzString @default(now())
+}
+
+model PasswordResetToken {
+  id        Int               @id @default(autoincrement())
+  token     String            @unique
+  user      User              @relation(fields:[userId], references:[id])
+  userId    Int
+  expiresAt TimestamptzString
+  used      Boolean           @default(false)
+  createdAt TimestamptzString @default(now())
+}
+
+model ProcessedPayment {
+  id                Int               @id @default(autoincrement())
+  razorpayPaymentId String            @unique
+  createdAt         TimestamptzString @default(now())
+}

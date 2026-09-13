@@ -1,0 +1,83 @@
+[
+  {
+    "id": "table.processedPayment",
+    "label": "Create table \"processedPayment\"",
+    "summary": "Creates table \"processedPayment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "processedPayment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"processedPayment\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"processedPayment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"processedPayment\"",
+        "sql": "CREATE TABLE \"public\".\"processedPayment\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"razorpayPaymentId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"processedPayment\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"processedPayment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.processedPayment.processedPayment_razorpayPaymentId_key",
+    "label": "Add unique constraint on \"processedPayment\" (razorpayPaymentId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "processedPayment_razorpayPaymentId_key",
+        "table": "processedPayment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"processedPayment_razorpayPaymentId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "processedPayment_razorpayPaymentId_key",
+          "public",
+          "\"public\".\"processedPayment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"processedPayment_razorpayPaymentId_key\"",
+        "sql": "ALTER TABLE \"public\".\"processedPayment\" ADD CONSTRAINT \"processedPayment_razorpayPaymentId_key\" UNIQUE (\"razorpayPaymentId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"processedPayment_razorpayPaymentId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "processedPayment_razorpayPaymentId_key",
+          "public",
+          "\"public\".\"processedPayment\""
+        ]
+      }
+    ]
+  }
+]

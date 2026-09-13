@@ -1,0 +1,365 @@
+[
+  {
+    "id": "table.product",
+    "label": "Create table \"product\"",
+    "summary": "Creates table \"product\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "product"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"product\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"product\"",
+        "sql": "CREATE TABLE \"public\".\"product\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"id\" SERIAL NOT NULL,\n  \"isActive\" bool DEFAULT true NOT NULL,\n  \"name\" text NOT NULL,\n  \"price\" int4 NOT NULL,\n  \"sellerId\" int4 NOT NULL,\n  \"stock\" int4 DEFAULT 0 NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"product\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.productRating",
+    "label": "Create table \"productRating\"",
+    "summary": "Creates table \"productRating\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "productRating"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"productRating\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"productRating\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"productRating\"",
+        "sql": "CREATE TABLE \"public\".\"productRating\" (\n  \"comment\" text,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"customerId\" int4 NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"productId\" int4 NOT NULL,\n  \"rating\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"productRating\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"productRating\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.productRating.productRating_productId_customerId_key",
+    "label": "Add unique constraint on \"productRating\" (productId, customerId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "productRating_productId_customerId_key",
+        "table": "productRating"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"productRating_productId_customerId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "productRating_productId_customerId_key",
+          "public",
+          "\"public\".\"productRating\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"productRating_productId_customerId_key\"",
+        "sql": "ALTER TABLE \"public\".\"productRating\" ADD CONSTRAINT \"productRating_productId_customerId_key\" UNIQUE (\"productId\", \"customerId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"productRating_productId_customerId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "productRating_productId_customerId_key",
+          "public",
+          "\"public\".\"productRating\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.product.product_sellerId_idx_d71255f2",
+    "label": "Create index \"product_sellerId_idx_d71255f2\" on \"product\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "product_sellerId_idx_d71255f2",
+        "table": "product"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"product_sellerId_idx_d71255f2\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_sellerId_idx_d71255f2\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"product_sellerId_idx_d71255f2\"",
+        "sql": "CREATE INDEX \"product_sellerId_idx_d71255f2\" ON \"public\".\"product\" (\"sellerId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"product_sellerId_idx_d71255f2\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"product_sellerId_idx_d71255f2\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.productRating.productRating_customerId_idx_b2a8a46c",
+    "label": "Create index \"productRating_customerId_idx_b2a8a46c\" on \"productRating\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "productRating_customerId_idx_b2a8a46c",
+        "table": "productRating"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"productRating_customerId_idx_b2a8a46c\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"productRating_customerId_idx_b2a8a46c\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"productRating_customerId_idx_b2a8a46c\"",
+        "sql": "CREATE INDEX \"productRating_customerId_idx_b2a8a46c\" ON \"public\".\"productRating\" (\"customerId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"productRating_customerId_idx_b2a8a46c\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"productRating_customerId_idx_b2a8a46c\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.productRating.productRating_productId_idx_5858600a",
+    "label": "Create index \"productRating_productId_idx_5858600a\" on \"productRating\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "productRating_productId_idx_5858600a",
+        "table": "productRating"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"productRating_productId_idx_5858600a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"productRating_productId_idx_5858600a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"productRating_productId_idx_5858600a\"",
+        "sql": "CREATE INDEX \"productRating_productId_idx_5858600a\" ON \"public\".\"productRating\" (\"productId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"productRating_productId_idx_5858600a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"productRating_productId_idx_5858600a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.product.product_sellerId_fkey",
+    "label": "Add foreign key \"product_sellerId_fkey\" on \"product\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "product_sellerId_fkey",
+        "table": "product"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"product_sellerId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_sellerId_fkey",
+          "public",
+          "\"public\".\"product\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"product_sellerId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"product\"\nADD CONSTRAINT \"product_sellerId_fkey\"\nFOREIGN KEY (\"sellerId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"product_sellerId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "product_sellerId_fkey",
+          "public",
+          "\"public\".\"product\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.productRating.productRating_productId_fkey",
+    "label": "Add foreign key \"productRating_productId_fkey\" on \"productRating\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "productRating_productId_fkey",
+        "table": "productRating"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"productRating_productId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "productRating_productId_fkey",
+          "public",
+          "\"public\".\"productRating\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"productRating_productId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"productRating\"\nADD CONSTRAINT \"productRating_productId_fkey\"\nFOREIGN KEY (\"productId\")\nREFERENCES \"public\".\"product\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"productRating_productId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "productRating_productId_fkey",
+          "public",
+          "\"public\".\"productRating\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.productRating.productRating_customerId_fkey",
+    "label": "Add foreign key \"productRating_customerId_fkey\" on \"productRating\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "productRating_customerId_fkey",
+        "table": "productRating"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"productRating_customerId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "productRating_customerId_fkey",
+          "public",
+          "\"public\".\"productRating\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"productRating_customerId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"productRating\"\nADD CONSTRAINT \"productRating_customerId_fkey\"\nFOREIGN KEY (\"customerId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"productRating_customerId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "productRating_customerId_fkey",
+          "public",
+          "\"public\".\"productRating\""
+        ]
+      }
+    ]
+  }
+]
