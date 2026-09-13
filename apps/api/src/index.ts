@@ -457,6 +457,14 @@ app.post("/demands/:id/pay-fee", requireAuth, async (req: AuthRequest, res) => {
         receipt: `booking_fee_${demand.id}`,
       });
 
+            await db.orm.public.RazorpayOrderMapping.create({
+        razorpayOrderId: razorpayOrder.id,
+        purpose: "booking_fee",
+        referenceId: demand.id,
+        userId: req.userId!,
+        amount: feeAmount,
+      });
+
       return res.status(200).json({
         razorpayOrderId: razorpayOrder.id,
         amount: razorpayOrder.amount,
@@ -1691,6 +1699,14 @@ app.post("/wallet/topup", requireAuth, async (req: AuthRequest, res) => {
       receipt: `topup_${req.userId}_${Date.now()}`,
     });
 
+        await db.orm.public.RazorpayOrderMapping.create({
+      razorpayOrderId: razorpayOrder.id,
+      purpose: "wallet_topup",
+      referenceId: req.userId!,
+      userId: req.userId!,
+      amount,
+    });
+
     res.status(200).json({
       razorpayOrderId: razorpayOrder.id,
       amount: razorpayOrder.amount,
@@ -1803,6 +1819,14 @@ app.post("/orders/:id/pay", requireAuth, async (req: AuthRequest, res) => {
       receipt: `order_${order.id}`,
     });
 
+        await db.orm.public.RazorpayOrderMapping.create({
+      razorpayOrderId: razorpayOrder.id,
+      purpose: "order_payment",
+      referenceId: order.id,
+      userId: req.userId!,
+      amount: amountDue,
+    });
+
     res.status(200).json({
       razorpayOrderId: razorpayOrder.id,
       amount: razorpayOrder.amount,
@@ -1854,6 +1878,72 @@ app.post("/orders/:id/verify-payment", requireAuth, async (req: AuthRequest, res
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/webhooks/razorpay", express.raw({ type: "application/json" }), async (req, res) => {
+  try {
+    const signature = req.headers["x-razorpay-signature"] as string;
+
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET!)
+      .update(req.body)
+      .digest("hex");
+
+    if (signature !== expectedSignature) {
+      return res.status(400).json({ error: "Invalid webhook signature" });
+    }
+
+    const event = JSON.parse(req.body.toString());
+
+    if (event.event === "payment.captured") {
+      const razorpayPaymentId = event.payload.payment.entity.id;
+      const razorpayOrderId = event.payload.payment.entity.order_id;
+
+      const alreadyProcessed = await db.orm.public.ProcessedPayment.where({ razorpayPaymentId }).first();
+
+      if (alreadyProcessed) {
+        return res.status(200).json({ message: "Already processed" });
+      }
+
+      const mapping = await db.orm.public.RazorpayOrderMapping.where({ razorpayOrderId }).first();
+
+      if (!mapping) {
+        console.error("No mapping found for Razorpay order:", razorpayOrderId);
+        return res.status(200).json({ message: "No mapping found, ignoring" });
+      }
+
+      await db.orm.public.ProcessedPayment.create({ razorpayPaymentId });
+
+      if (mapping.purpose === "order_payment") {
+        await db.orm.public.Order.where({ id: mapping.referenceId }).update({ isPaid: true });
+      } else if (mapping.purpose === "wallet_topup") {
+        const user = await db.orm.public.User.where({ id: mapping.userId }).first();
+        if (user) {
+          await db.transaction(async (tx) => {
+            await tx.orm.public.User.where({ id: user.id }).update({
+              walletBalance: user.walletBalance + mapping.amount,
+            });
+            await tx.orm.public.WalletTransaction.create({
+              amount: mapping.amount,
+              type: "credit",
+              reason: "topup",
+              userId: user.id,
+            });
+          });
+        }
+      } else if (mapping.purpose === "booking_fee") {
+        await db.orm.public.Demand.where({ id: mapping.referenceId }).update({
+          status: "open",
+          bookingFeePaid: true,
+        });
+      }
+    }
+
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.error("Webhook processing error:", error);
+    res.status(500).json({ error: "Webhook processing failed" });
   }
 });
 
@@ -2437,6 +2527,9 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
 
     res.status(201).json({ ...order, items: validatedItems, subtotal, deliveryFeeAmount, totalAmount });
   } catch (error) {
+    if (error instanceof Error && error.message.startsWith("INSUFFICIENT_STOCK:")) {
+      return res.status(400).json({ error: "One or more items went out of stock during checkout" });
+    }
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }

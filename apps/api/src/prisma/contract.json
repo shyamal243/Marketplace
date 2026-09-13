@@ -80,6 +80,10 @@
       "model": "ProductRating",
       "namespace": "public"
     },
+    "razorpayOrderMapping": {
+      "model": "RazorpayOrderMapping",
+      "namespace": "public"
+    },
     "returnRequest": {
       "model": "ReturnRequest",
       "namespace": "public"
@@ -2221,6 +2225,87 @@
               },
               "namespaceId": "public",
               "table": "productRating"
+            }
+          },
+          "RazorpayOrderMapping": {
+            "fields": {
+              "amount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "purpose": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "razorpayOrderId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "referenceId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "amount": {
+                  "column": "amount"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "purpose": {
+                  "column": "purpose"
+                },
+                "razorpayOrderId": {
+                  "column": "razorpayOrderId"
+                },
+                "referenceId": {
+                  "column": "referenceId"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "razorpayOrderMapping"
             }
           },
           "ReturnRequest": {
@@ -4984,6 +5069,67 @@
                 }
               ]
             },
+            "razorpayOrderMapping": {
+              "columns": {
+                "amount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "purpose": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "razorpayOrderId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "referenceId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "razorpayOrderId"
+                  ]
+                }
+              ]
+            },
             "returnRequest": {
               "columns": {
                 "createdAt": {
@@ -5560,7 +5706,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "e8fe871d9ddb1ced6cda9bd7ced8841bf2925844b97e5a32d11ff761fc09d3eb"
+    "storageHash": "3f85f8eab2acfb2127e57e28ee0f78a9bccac442e18b13db9e5ac7beca9857c0"
   },
   "capabilities": {
     "postgres": {
