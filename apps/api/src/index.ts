@@ -100,10 +100,18 @@ app.post("/login", async (req, res) => {
 
 app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { title, description, budget } = req.body;
+    const { title, description, budget, durationHours } = req.body;
+
+    const allowedDurations = [1, 2, 3, 6, 12, 24];
+
+    if (!durationHours || !allowedDurations.includes(durationHours)) {
+      return res.status(400).json({ error: `durationHours must be one of: ${allowedDurations.join(", ")}` });
+    }
 
     const feeSetting = await db.orm.public.PlatformSetting.where({ key: "booking_fee" }).first();
     const bookingFeeAmount = feeSetting ? Number(feeSetting.value) : 10;
+
+    const bidWindowExpiresAt = new Date(Date.now() + durationHours * 60 * 60 * 1000);
 
     const demand = await db.orm.public.Demand.create({
       title,
@@ -113,6 +121,7 @@ app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
       status: "pending_payment",
       bookingFeeAmount,
       bookingFeePaid: false,
+      bidWindowExpiresAt,
     });
 
     res.status(201).json(demand);
@@ -308,6 +317,19 @@ app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { demandId, amount, message } = req.body;
 
+    // STEP 1: Look up the demand FIRST (new)
+    const targetDemand = await db.orm.public.Demand.where({ id: demandId }).first();
+
+    if (!targetDemand) {
+      return res.status(404).json({ error: "Demand not found" });
+    }
+
+    // STEP 2: Check if the bidding deadline has passed (new)
+    if (targetDemand.bidWindowExpiresAt && new Date(targetDemand.bidWindowExpiresAt) < new Date()) {
+      return res.status(400).json({ error: "The bidding window for this demand has closed" });
+    }
+
+    // STEP 3: Only now do we create the bid (same as before)
     const bid = await db.orm.public.Bid.create({
       demandId,
       amount,
@@ -315,6 +337,7 @@ app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
       sellerId: req.userId!,
     });
 
+    // STEP 4: Look up demand again for the notification (same as before, kept for the message text)
     const demand = await db.orm.public.Demand.where({ id: demandId }).first();
 
     if (demand) {

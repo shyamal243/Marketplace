@@ -20,19 +20,20 @@ model User {
 }
 
 model Demand {
-  id               Int               @id @default(autoincrement())
-  title            String
-  description      String?
-  budget           Int?
-  status           String            @default("open") // "pending_payment", "open", "closed", "fulfilled"
-  bookingFeeAmount Int?
-  bookingFeePaid   Boolean           @default(false)
-  buyer            User              @relation(fields:[buyerId], references:[id])
-  buyerId          Int
-  bids             Bid[]
-  orders           Order[]
-  createdAt        TimestamptzString @default(now())
-  updatedAt        TimestamptzString @default(now())
+  id                 Int                @id @default(autoincrement())
+  title              String
+  description        String?
+  budget             Int?
+  status             String             @default("open") // "pending_payment", "open", "closed", "fulfilled"
+  bookingFeeAmount   Int?
+  bookingFeePaid     Boolean            @default(false)
+  bidWindowExpiresAt TimestamptzString?
+  buyer              User               @relation(fields:[buyerId], references:[id])
+  buyerId            Int
+  bids               Bid[]
+  orders             Order[]
+  createdAt          TimestamptzString  @default(now())
+  updatedAt          TimestamptzString  @default(now())
 }
 
 model Bid {

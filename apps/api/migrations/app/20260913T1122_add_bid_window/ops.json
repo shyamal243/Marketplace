@@ -1,0 +1,44 @@
+[
+  {
+    "id": "column.public.demand.bidWindowExpiresAt",
+    "label": "Add column \"bidWindowExpiresAt\" to \"demand\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "bidWindowExpiresAt",
+        "table": "demand"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"bidWindowExpiresAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "bidWindowExpiresAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"bidWindowExpiresAt\"",
+        "sql": "ALTER TABLE \"public\".\"demand\" ADD COLUMN \"bidWindowExpiresAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"bidWindowExpiresAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "bidWindowExpiresAt"
+        ]
+      }
+    ]
+  }
+]
