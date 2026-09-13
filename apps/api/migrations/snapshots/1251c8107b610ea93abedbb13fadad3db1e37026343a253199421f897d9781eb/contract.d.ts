@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'eee9f513d71091ba14a7d3ef7a6697aeb4ff88f244c46ac00ff7c5693c378573'>;
+  StorageHashBase<'1251c8107b610ea93abedbb13fadad3db1e37026343a253199421f897d9781eb'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -334,8 +334,6 @@ export type FieldOutputTypes = {
       readonly gstCategory: CodecTypes['pg/text@1']['output'] | null;
       readonly gstRatePercent: CodecTypes['pg/int4@1']['output'] | null;
       readonly gstAmount: CodecTypes['pg/int4@1']['output'] | null;
-      readonly commissionAmount: CodecTypes['pg/int4@1']['output'] | null;
-      readonly deliveryFeeAmount: CodecTypes['pg/int4@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -540,8 +538,6 @@ export type FieldInputTypes = {
       readonly gstCategory: CodecTypes['pg/text@1']['input'] | null;
       readonly gstRatePercent: CodecTypes['pg/int4@1']['input'] | null;
       readonly gstAmount: CodecTypes['pg/int4@1']['input'] | null;
-      readonly commissionAmount: CodecTypes['pg/int4@1']['input'] | null;
-      readonly deliveryFeeAmount: CodecTypes['pg/int4@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -733,10 +729,8 @@ export type StorageColumnTypes = {
       readonly amount: CodecTypes['pg/int4@1']['output'];
       readonly bidId: CodecTypes['pg/int4@1']['output'] | null;
       readonly buyerId: CodecTypes['pg/int4@1']['output'];
-      readonly commissionAmount: CodecTypes['pg/int4@1']['output'] | null;
       readonly courierName: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
-      readonly deliveryFeeAmount: CodecTypes['pg/int4@1']['output'] | null;
       readonly deliveryMode: CodecTypes['pg/text@1']['output'] | null;
       readonly demandId: CodecTypes['pg/int4@1']['output'] | null;
       readonly gstAmount: CodecTypes['pg/int4@1']['output'] | null;
@@ -939,10 +933,8 @@ export type StorageColumnInputTypes = {
       readonly amount: CodecTypes['pg/int4@1']['input'];
       readonly bidId: CodecTypes['pg/int4@1']['input'] | null;
       readonly buyerId: CodecTypes['pg/int4@1']['input'];
-      readonly commissionAmount: CodecTypes['pg/int4@1']['input'] | null;
       readonly courierName: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
-      readonly deliveryFeeAmount: CodecTypes['pg/int4@1']['input'] | null;
       readonly deliveryMode: CodecTypes['pg/text@1']['input'] | null;
       readonly demandId: CodecTypes['pg/int4@1']['input'] | null;
       readonly gstAmount: CodecTypes['pg/int4@1']['input'] | null;
@@ -1825,16 +1817,6 @@ type ContractBase = Omit<
                   readonly nullable: true;
                 };
                 readonly gstAmount: {
-                  readonly nativeType: 'int4';
-                  readonly codecId: 'pg/int4@1';
-                  readonly nullable: true;
-                };
-                readonly commissionAmount: {
-                  readonly nativeType: 'int4';
-                  readonly codecId: 'pg/int4@1';
-                  readonly nullable: true;
-                };
-                readonly deliveryFeeAmount: {
                   readonly nativeType: 'int4';
                   readonly codecId: 'pg/int4@1';
                   readonly nullable: true;
@@ -3519,14 +3501,6 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
-              readonly commissionAmount: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
-              };
-              readonly deliveryFeeAmount: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
-              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -3654,8 +3628,6 @@ type ContractBase = Omit<
                 readonly gstCategory: { readonly column: 'gstCategory' };
                 readonly gstRatePercent: { readonly column: 'gstRatePercent' };
                 readonly gstAmount: { readonly column: 'gstAmount' };
-                readonly commissionAmount: { readonly column: 'commissionAmount' };
-                readonly deliveryFeeAmount: { readonly column: 'deliveryFeeAmount' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };

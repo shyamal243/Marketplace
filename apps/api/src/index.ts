@@ -515,6 +515,9 @@ app.post("/bids/:id/accept", requireAuth, async (req: AuthRequest, res) => {
 
     const ratePercent = gstRate?.ratePercent ?? 0;
     const gstAmount = Math.round((bid.amount * ratePercent) / (100 + ratePercent));
+    const commissionSetting = await db.orm.public.PlatformSetting.where({ key: "commission_percent" }).first();
+    const commissionPercent = commissionSetting ? Number(commissionSetting.value) : 0;
+    const commissionAmount = Math.round((bid.amount * commissionPercent) / 100);
 
     const order = await db.transaction(async (tx) => {
       const newOrder = await tx.orm.public.Order.create({
@@ -526,7 +529,15 @@ app.post("/bids/:id/accept", requireAuth, async (req: AuthRequest, res) => {
         gstCategory: demand.category ?? null,
         gstRatePercent: ratePercent,
         gstAmount,
+        commissionAmount,
       });
+            if (commissionAmount > 0) {
+        await tx.orm.public.PlatformEarning.create({
+          type: "commission",
+          amount: commissionAmount,
+          orderId: newOrder.id,
+        });
+      }
 
       await tx.orm.public.Bid.where({ id: bid.id }).update({ status: "accepted" });
       await tx.orm.public.Demand.where({ id: demand.id }).update({ status: "fulfilled" });
@@ -1283,6 +1294,38 @@ app.post("/admin/settings/booking-fee", requireAuth, async (req: AuthRequest, re
     const setting = await db.orm.public.PlatformSetting.create({
       key: "booking_fee",
       value: String(amount),
+    });
+
+    res.status(201).json(setting);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+app.post("/admin/settings/commission", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access only" });
+    }
+
+    const { percent } = req.body;
+
+    if (typeof percent !== "number" || percent < 0 || percent > 100) {
+      return res.status(400).json({ error: "percent must be between 0 and 100" });
+    }
+
+    const existing = await db.orm.public.PlatformSetting.where({ key: "commission_percent" }).first();
+
+    if (existing) {
+      const updated = await db.orm.public.PlatformSetting.where({ id: existing.id }).update({
+        value: String(percent),
+      });
+      return res.status(200).json(updated);
+    }
+
+    const setting = await db.orm.public.PlatformSetting.create({
+      key: "commission_percent",
+      value: String(percent),
     });
 
     res.status(201).json(setting);
