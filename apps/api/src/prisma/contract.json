@@ -530,7 +530,7 @@
                 }
               },
               "review": {
-                "cardinality": "1:1",
+                "cardinality": "1:N",
                 "on": {
                   "localFields": [
                     "id"
@@ -1707,6 +1707,14 @@
               "indexes": [
                 {
                   "columns": [
+                    "orderId"
+                  ],
+                  "name": "review_orderId_idx_d284871b",
+                  "prefix": "review_orderId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
                     "revieweeId"
                   ],
                   "name": "review_revieweeId_idx_00d8b149",
@@ -1730,7 +1738,8 @@
               "uniques": [
                 {
                   "columns": [
-                    "orderId"
+                    "orderId",
+                    "reviewerId"
                   ]
                 }
               ]
@@ -1895,7 +1904,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "7f034ffd78a8a85ed574933bb22b0ff03b4a2d7471e1aa8b7019f3fa2c49b63b"
+    "storageHash": "1771a0a46534d13a322c63f072ebb0a1f01ca9550bf7873dcfcf03b5eb4e217d"
   },
   "capabilities": {
     "postgres": {

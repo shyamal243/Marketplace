@@ -111,7 +111,7 @@ app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
     const feeSetting = await db.orm.public.PlatformSetting.where({ key: "booking_fee" }).first();
     const bookingFeeAmount = feeSetting ? Number(feeSetting.value) : 10;
 
-    const bidWindowExpiresAt = new Date(Date.now() + durationHours * 60 * 60 * 1000);
+    const bidWindowExpiresAt = new Date(Date.now() + durationHours * 60 * 60 * 1000).toISOString();
 
     const demand = await db.orm.public.Demand.create({
       title,
@@ -531,10 +531,11 @@ app.post("/orders/:id/review", requireAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: "Can only review delivered orders" });
     }
 
-    const existingReview = await db.orm.public.Review.where({ orderId: order.id }).first();
+    const existingReviews = await db.orm.public.Review.where({ orderId: order.id }).all();
+    const buyerAlreadyReviewed = existingReviews.some((r) => r.reviewerId === order.buyerId);
 
-    if (existingReview) {
-      return res.status(400).json({ error: "This order has already been reviewed" });
+    if (buyerAlreadyReviewed) {
+      return res.status(400).json({ error: "You have already reviewed this seller for this order" });
     }
 
     const review = await db.orm.public.Review.create({
@@ -546,6 +547,85 @@ app.post("/orders/:id/review", requireAuth, async (req: AuthRequest, res) => {
     });
 
     res.status(201).json(review);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/orders/:id/review-buyer", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    const { rating, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: "Rating must be between 1 and 5" });
+    }
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the seller for this order" });
+    }
+
+    if (order.status !== "delivered") {
+      return res.status(400).json({ error: "Can only review delivered orders" });
+    }
+
+    const existingReviews = await db.orm.public.Review.where({ orderId: order.id }).all();
+    const sellerAlreadyReviewed = existingReviews.some((r) => r.reviewerId === order.sellerId);
+
+    if (sellerAlreadyReviewed) {
+      return res.status(400).json({ error: "You have already reviewed this buyer for this order" });
+    }
+
+    const review = await db.orm.public.Review.create({
+      rating,
+      comment,
+      orderId: order.id,
+      reviewerId: order.sellerId,
+      revieweeId: order.buyerId,
+    });
+
+    res.status(201).json(review);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/users/:id/order-history", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const userId = Number(req.params.id);
+
+    const user = await db.orm.public.User.where({ id: userId }).first();
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const ordersAsBuyer = await db.orm.public.Order.where({ buyerId: userId }).all();
+
+    const reviews = await db.orm.public.Review.where({ revieweeId: userId }).all();
+
+    const averageRating =
+      reviews.length > 0
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+        : null;
+
+    res.status(200).json({
+      userId: user.id,
+      name: user.name,
+      averageRating,
+      totalReviews: reviews.length,
+      totalOrders: ordersAsBuyer.length,
+      completedOrders: ordersAsBuyer.filter((o) => o.status === "delivered" || o.status === "paid").length,
+      orders: ordersAsBuyer,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });

@@ -61,7 +61,7 @@ model Order {
   buyerId   Int
   seller    User              @relation("OrderSeller", fields:[sellerId], references:[id])
   sellerId  Int
-  review    Review?
+  review    Review[]
   createdAt TimestamptzString @default(now())
   updatedAt TimestamptzString @default(now())
 }
@@ -71,13 +71,15 @@ model Review {
   rating     Int
   comment    String?
   order      Order             @relation(fields:[orderId], references:[id])
-  orderId    Int               @unique
+  orderId    Int
   reviewer   User              @relation("ReviewsGiven", fields:[reviewerId], references:[id])
   reviewerId Int
   reviewee   User              @relation("ReviewsReceived", fields:[revieweeId], references:[id])
   revieweeId Int
   createdAt  TimestamptzString @default(now())
   updatedAt  TimestamptzString @default(now())
+
+  @@unique([orderId, reviewerId])
 }
 
 model Notification {
