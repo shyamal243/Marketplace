@@ -1577,14 +1577,59 @@ app.post("/notifications/:id/read", requireAuth, async (req: AuthRequest, res) =
   }
 });
 
+app.post("/stores", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "seller") {
+      return res.status(403).json({ error: "Only sellers can create stores" });
+    }
+
+    const { name, address, latitude, longitude, deliveryFeeBase, deliveryFeePerKm } = req.body;
+
+    if (!name) {
+      return res.status(400).json({ error: "name is required" });
+    }
+
+    const store = await db.orm.public.Store.create({
+      name,
+      address,
+      latitude,
+      longitude,
+      deliveryFeeBase: deliveryFeeBase ?? 0,
+      deliveryFeePerKm: deliveryFeePerKm ?? 0,
+      sellerId: req.userId!,
+    });
+
+    res.status(201).json(store);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/sellers/:id/stores", async (req, res) => {
+  try {
+    const sellerId = Number(req.params.id);
+    const stores = await db.orm.public.Store.where({ sellerId, isActive: true }).all();
+    res.status(200).json(stores);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/products", requireAuth, async (req: AuthRequest, res) => {
   try {
     if (req.userRole !== "seller") {
       return res.status(403).json({ error: "Only sellers can add products" });
     }
 
-    const { name, description, price, stock } = req.body;
-        if (typeof price !== "number" || price <= 0) {
+    const { storeId, name, description, price, stock } = req.body;
+
+    if (!storeId) {
+      return res.status(400).json({ error: "storeId is required" });
+    }
+
+    if (typeof price !== "number" || price <= 0) {
       return res.status(400).json({ error: "price must be a positive number" });
     }
 
@@ -1592,12 +1637,18 @@ app.post("/products", requireAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: "stock must be a non-negative number" });
     }
 
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store || store.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this store" });
+    }
+
     const product = await db.orm.public.Product.create({
       name,
       description,
       price,
       stock: stock ?? 0,
-      sellerId: req.userId!,
+      storeId,
     });
 
     res.status(201).json(product);
@@ -1617,7 +1668,9 @@ app.post("/products/:id/remove", requireAuth, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    if (product.sellerId !== req.userId) {
+       const store = await db.orm.public.Store.where({ id: product.storeId }).first();
+
+    if (!store || store.sellerId !== req.userId) {
       return res.status(403).json({ error: "You do not own this product" });
     }
 
@@ -1630,12 +1683,13 @@ app.post("/products/:id/remove", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-app.get("/sellers/:id/products", async (req, res) => {
+
+app.get("/stores/:id/products", async (req, res) => {
   try {
-    const sellerId = Number(req.params.id);
+    const storeId = Number(req.params.id);
     const { search } = req.query;
 
-    let products = await db.orm.public.Product.where({ sellerId, isActive: true }).all();
+    let products = await db.orm.public.Product.where({ storeId, isActive: true }).all();
 
     if (search) {
       const term = String(search).toLowerCase();
