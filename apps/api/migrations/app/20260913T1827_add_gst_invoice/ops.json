@@ -1,0 +1,167 @@
+[
+  {
+    "id": "table.gstInvoice",
+    "label": "Create table \"gstInvoice\"",
+    "summary": "Creates table \"gstInvoice\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "gstInvoice"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"gstInvoice\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"gstInvoice\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"gstInvoice\"",
+        "sql": "CREATE TABLE \"public\".\"gstInvoice\" (\n  \"baseAmount\" int4 NOT NULL,\n  \"buyerGstin\" text,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"gstAmount\" int4 NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"invoiceNumber\" text NOT NULL,\n  \"orderId\" int4 NOT NULL,\n  \"totalAmount\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"gstInvoice\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"gstInvoice\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.gstInvoice.gstInvoice_orderId_key",
+    "label": "Add unique constraint on \"gstInvoice\" (orderId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "gstInvoice_orderId_key",
+        "table": "gstInvoice"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"gstInvoice_orderId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "gstInvoice_orderId_key",
+          "public",
+          "\"public\".\"gstInvoice\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"gstInvoice_orderId_key\"",
+        "sql": "ALTER TABLE \"public\".\"gstInvoice\" ADD CONSTRAINT \"gstInvoice_orderId_key\" UNIQUE (\"orderId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"gstInvoice_orderId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "gstInvoice_orderId_key",
+          "public",
+          "\"public\".\"gstInvoice\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.gstInvoice.gstInvoice_invoiceNumber_key",
+    "label": "Add unique constraint on \"gstInvoice\" (invoiceNumber)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "gstInvoice_invoiceNumber_key",
+        "table": "gstInvoice"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"gstInvoice_invoiceNumber_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "gstInvoice_invoiceNumber_key",
+          "public",
+          "\"public\".\"gstInvoice\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"gstInvoice_invoiceNumber_key\"",
+        "sql": "ALTER TABLE \"public\".\"gstInvoice\" ADD CONSTRAINT \"gstInvoice_invoiceNumber_key\" UNIQUE (\"invoiceNumber\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"gstInvoice_invoiceNumber_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "gstInvoice_invoiceNumber_key",
+          "public",
+          "\"public\".\"gstInvoice\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.gstInvoice.gstInvoice_orderId_fkey",
+    "label": "Add foreign key \"gstInvoice_orderId_fkey\" on \"gstInvoice\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "gstInvoice_orderId_fkey",
+        "table": "gstInvoice"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"gstInvoice_orderId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "gstInvoice_orderId_fkey",
+          "public",
+          "\"public\".\"gstInvoice\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"gstInvoice_orderId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"gstInvoice\"\nADD CONSTRAINT \"gstInvoice_orderId_fkey\"\nFOREIGN KEY (\"orderId\")\nREFERENCES \"public\".\"order\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"gstInvoice_orderId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "gstInvoice_orderId_fkey",
+          "public",
+          "\"public\".\"gstInvoice\""
+        ]
+      }
+    ]
+  }
+]

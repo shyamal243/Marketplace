@@ -1606,6 +1606,76 @@ app.post("/orders/:id/verify-payment", requireAuth, async (req: AuthRequest, res
   }
 });
 
+app.post("/orders/:id/generate-invoice", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    const { buyerGstin } = req.body;
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId && order.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You are not part of this order" });
+    }
+
+    const existing = await db.orm.public.GstInvoice.where({ orderId: order.id }).first();
+
+    if (existing) {
+      return res.status(200).json(existing);
+    }
+
+    const gstAmount = order.gstAmount ?? 0;
+    const baseAmount = order.amount - gstAmount;
+    const invoiceNumber = `INV-${order.id}-${Date.now()}`;
+
+    const invoice = await db.orm.public.GstInvoice.create({
+      orderId: order.id,
+      invoiceNumber,
+      buyerGstin: buyerGstin ?? null,
+      baseAmount,
+      gstAmount,
+      totalAmount: order.amount,
+    });
+
+    res.status(201).json(invoice);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/orders/:id/invoice", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId && order.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You are not part of this order" });
+    }
+
+    const invoice = await db.orm.public.GstInvoice.where({ orderId }).first();
+
+    if (!invoice) {
+      return res.status(404).json({ error: "No invoice generated for this order yet" });
+    }
+
+    res.status(200).json(invoice);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+
+
 app.get("/notifications", requireAuth, async (req: AuthRequest, res) => {
   try {
     const notifications = await db.orm.public.Notification.where({ userId: req.userId! }).all();
@@ -1943,6 +2013,90 @@ app.use((req, res) => {
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err);
   res.status(500).json({ error: "Internal server error" });
+});
+
+app.get("/earnings/mine", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { period } = req.query;
+
+    const now = new Date();
+    let startDate: Date;
+
+    if (period === "weekly") {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (period === "monthly") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    const allTransactions = await db.orm.public.WalletTransaction.where({ userId: req.userId! }).all();
+
+    const inPeriod = allTransactions.filter((t) => new Date(t.createdAt) >= startDate);
+
+    const totalCredits = inPeriod
+      .filter((t) => t.type === "credit")
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalDebits = inPeriod
+      .filter((t) => t.type === "debit")
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    res.status(200).json({
+      period: period ?? "daily",
+      startDate: startDate.toISOString(),
+      totalCredits,
+      totalDebits,
+      netEarnings: totalCredits - totalDebits,
+      transactionCount: inPeriod.length,
+      transactions: inPeriod,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/admin/earnings/platform", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access only" });
+    }
+
+    const { period } = req.query;
+
+    const now = new Date();
+    let startDate: Date;
+
+    if (period === "weekly") {
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    } else if (period === "monthly") {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else {
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    }
+
+    const allEarnings = await db.orm.public.PlatformEarning.where({}).all();
+    const inPeriod = allEarnings.filter((e) => new Date(e.createdAt) >= startDate);
+
+    const total = inPeriod.reduce((sum, e) => sum + e.amount, 0);
+    const byType: Record<string, number> = {};
+
+    for (const e of inPeriod) {
+      byType[e.type] = (byType[e.type] ?? 0) + e.amount;
+    }
+
+    res.status(200).json({
+      period: period ?? "daily",
+      startDate: startDate.toISOString(),
+      totalEarnings: total,
+      breakdownByType: byType,
+      entries: inPeriod,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
 });
 
 app.listen(PORT, () => {
