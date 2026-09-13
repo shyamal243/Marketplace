@@ -19,6 +19,10 @@ function requireAuth(req: AuthRequest, res: express.Response, next: express.Next
 
   const token = authHeader.split(" ")[1];
 
+if (!token) {
+  return res.status(401).json({ error: "No token provided" });
+}
+
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number; role: string };
     req.userId = decoded.userId;
@@ -98,14 +102,125 @@ app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { title, description, budget } = req.body;
 
+    const feeSetting = await db.orm.public.PlatformSetting.where({ key: "booking_fee" }).first();
+    const bookingFeeAmount = feeSetting ? Number(feeSetting.value) : 10;
+
     const demand = await db.orm.public.Demand.create({
       title,
       description,
       budget,
       buyerId: req.userId!,
+      status: "pending_payment",
+      bookingFeeAmount,
+      bookingFeePaid: false,
     });
 
     res.status(201).json(demand);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/demands/:id/pay-fee", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const demandId = Number(req.params.id);
+    const { method } = req.body;
+
+    const demand = await db.orm.public.Demand.where({ id: demandId }).first();
+
+    if (!demand) {
+      return res.status(404).json({ error: "Demand not found" });
+    }
+
+    if (demand.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this demand" });
+    }
+
+    if (demand.status !== "pending_payment") {
+      return res.status(400).json({ error: `Cannot pay fee for a demand with status "${demand.status}"` });
+    }
+
+    const feeAmount = demand.bookingFeeAmount!;
+
+    if (method === "wallet") {
+      const user = await db.orm.public.User.where({ id: req.userId! }).first();
+
+      if (!user || user.walletBalance < feeAmount) {
+        return res.status(400).json({ error: "Insufficient wallet balance" });
+      }
+
+      await db.orm.public.User.where({ id: user.id }).update({
+        walletBalance: user.walletBalance - feeAmount,
+      });
+
+      await db.orm.public.WalletTransaction.create({
+        amount: feeAmount,
+        type: "debit",
+        reason: "booking_fee",
+        userId: user.id,
+      });
+
+      const updatedDemand = await db.orm.public.Demand.where({ id: demand.id }).update({
+        status: "open",
+        bookingFeePaid: true,
+      });
+
+      return res.status(200).json(updatedDemand);
+    }
+
+    if (method === "razorpay") {
+      const razorpayOrder = await razorpay.orders.create({
+        amount: feeAmount * 100,
+        currency: "INR",
+        receipt: `booking_fee_${demand.id}`,
+      });
+
+      return res.status(200).json({
+        razorpayOrderId: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        keyId: process.env.RAZORPAY_KEY_ID,
+      });
+    }
+
+    res.status(400).json({ error: "method must be 'wallet' or 'razorpay'" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/demands/:id/verify-fee-payment", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const demandId = Number(req.params.id);
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    const demand = await db.orm.public.Demand.where({ id: demandId }).first();
+
+    if (!demand) {
+      return res.status(404).json({ error: "Demand not found" });
+    }
+
+    if (demand.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this demand" });
+    }
+
+    const generatedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+      .digest("hex");
+
+    if (generatedSignature !== razorpaySignature) {
+      return res.status(400).json({ error: "Payment verification failed" });
+    }
+
+    const updatedDemand = await db.orm.public.Demand.where({ id: demand.id }).update({
+      status: "open",
+      bookingFeePaid: true,
+    });
+
+    res.status(200).json(updatedDemand);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
