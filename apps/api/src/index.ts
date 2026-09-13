@@ -406,6 +406,118 @@ app.get("/users/:id/profile", async (req, res) => {
   }
 });
 
+app.post("/admin/settings/booking-fee", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access only" });
+    }
+
+    const { amount } = req.body;
+
+    const existing = await db.orm.public.PlatformSetting.where({ key: "booking_fee" }).first();
+
+    if (existing) {
+      const updated = await db.orm.public.PlatformSetting.where({ id: existing.id }).update({
+        value: String(amount),
+      });
+      return res.status(200).json(updated);
+    }
+
+    const setting = await db.orm.public.PlatformSetting.create({
+      key: "booking_fee",
+      value: String(amount),
+    });
+
+    res.status(201).json(setting);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/wallet/topup", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { amount } = req.body;
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: "Amount must be greater than 0" });
+    }
+
+    const razorpayOrder = await razorpay.orders.create({
+      amount: amount * 100,
+      currency: "INR",
+      receipt: `topup_${req.userId}_${Date.now()}`,
+    });
+
+    res.status(200).json({
+      razorpayOrderId: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+      keyId: process.env.RAZORPAY_KEY_ID,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/wallet/verify-topup", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature, amount } = req.body;
+
+    const generatedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+      .digest("hex");
+
+    if (generatedSignature !== razorpaySignature) {
+      return res.status(400).json({ error: "Payment verification failed" });
+    }
+
+    const user = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    await db.orm.public.User.where({ id: user.id }).update({
+      walletBalance: user.walletBalance + amount,
+    });
+
+    await db.orm.public.WalletTransaction.create({
+      amount,
+      type: "credit",
+      reason: "topup",
+      userId: user.id,
+    });
+
+    res.status(200).json({ newBalance: user.walletBalance + amount });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/wallet", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const user = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const transactions = await db.orm.public.WalletTransaction.where({ userId: req.userId! }).all();
+
+    res.status(200).json({
+      balance: user.walletBalance,
+      transactions,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/orders/:id/pay", requireAuth, async (req: AuthRequest, res) => {
   try {
     const orderId = Number(req.params.id);
