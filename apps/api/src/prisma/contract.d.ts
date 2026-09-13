@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'5bf9bda6461c58a9fe3a63a44562c3cd966549471b6df0ae7f1f4bac1faa4cb4'>;
+  StorageHashBase<'822f65ddf5954fada1ee7087f556bcfc130942e4518406066bc46753c61391ab'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -294,6 +294,13 @@ export type FieldOutputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly Favorite: {
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly userId: CodecTypes['pg/int4@1']['output'];
+      readonly storeId: CodecTypes['pg/int4@1']['output'] | null;
+      readonly productId: CodecTypes['pg/int4@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly GstInvoice: {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly orderId: CodecTypes['pg/int4@1']['output'];
@@ -442,6 +449,9 @@ export type FieldOutputTypes = {
       readonly role: CodecTypes['pg/text@1']['output'];
       readonly walletBalance: CodecTypes['pg/int4@1']['output'];
       readonly kycStatus: CodecTypes['pg/text@1']['output'];
+      readonly referralCode: CodecTypes['pg/text@1']['output'] | null;
+      readonly referredBy: CodecTypes['pg/int4@1']['output'] | null;
+      readonly referralRewarded: CodecTypes['pg/bool@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -510,6 +520,13 @@ export type FieldInputTypes = {
       readonly buyerId: CodecTypes['pg/int4@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly Favorite: {
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly userId: CodecTypes['pg/int4@1']['input'];
+      readonly storeId: CodecTypes['pg/int4@1']['input'] | null;
+      readonly productId: CodecTypes['pg/int4@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly GstInvoice: {
       readonly id: CodecTypes['pg/int4@1']['input'];
@@ -659,6 +676,9 @@ export type FieldInputTypes = {
       readonly role: CodecTypes['pg/text@1']['input'];
       readonly walletBalance: CodecTypes['pg/int4@1']['input'];
       readonly kycStatus: CodecTypes['pg/text@1']['input'];
+      readonly referralCode: CodecTypes['pg/text@1']['input'] | null;
+      readonly referredBy: CodecTypes['pg/int4@1']['input'] | null;
+      readonly referralRewarded: CodecTypes['pg/bool@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -727,6 +747,13 @@ export type StorageColumnTypes = {
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
+    readonly favorite: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly productId: CodecTypes['pg/int4@1']['output'] | null;
+      readonly storeId: CodecTypes['pg/int4@1']['output'] | null;
+      readonly userId: CodecTypes['pg/int4@1']['output'];
     };
     readonly gstInvoice: {
       readonly baseAmount: CodecTypes['pg/int4@1']['output'];
@@ -875,6 +902,9 @@ export type StorageColumnTypes = {
       readonly kycStatus: CodecTypes['pg/text@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly password: CodecTypes['pg/text@1']['output'];
+      readonly referralCode: CodecTypes['pg/text@1']['output'] | null;
+      readonly referralRewarded: CodecTypes['pg/bool@1']['output'];
+      readonly referredBy: CodecTypes['pg/int4@1']['output'] | null;
       readonly role: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly walletBalance: CodecTypes['pg/int4@1']['output'];
@@ -944,6 +974,13 @@ export type StorageColumnInputTypes = {
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly favorite: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly productId: CodecTypes['pg/int4@1']['input'] | null;
+      readonly storeId: CodecTypes['pg/int4@1']['input'] | null;
+      readonly userId: CodecTypes['pg/int4@1']['input'];
     };
     readonly gstInvoice: {
       readonly baseAmount: CodecTypes['pg/int4@1']['input'];
@@ -1092,6 +1129,9 @@ export type StorageColumnInputTypes = {
       readonly kycStatus: CodecTypes['pg/text@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly password: CodecTypes['pg/text@1']['input'];
+      readonly referralCode: CodecTypes['pg/text@1']['input'] | null;
+      readonly referralRewarded: CodecTypes['pg/bool@1']['input'];
+      readonly referredBy: CodecTypes['pg/int4@1']['input'] | null;
       readonly role: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly walletBalance: CodecTypes['pg/int4@1']['input'];
@@ -1598,6 +1638,100 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly favorite: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                };
+                readonly userId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly storeId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly productId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['userId', 'storeId', 'productId'] }];
+              indexes: readonly [
+                {
+                  readonly name: 'favorite_userId_idx_a489d58a';
+                  readonly prefix: 'favorite_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'favorite_storeId_idx_c545737d';
+                  readonly prefix: 'favorite_storeId_idx';
+                  readonly columns: readonly ['storeId'];
+                  readonly unique: false;
+                },
+                {
+                  readonly name: 'favorite_productId_idx_5858600a';
+                  readonly prefix: 'favorite_productId_idx';
+                  readonly columns: readonly ['productId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'favorite';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'favorite';
+                    readonly columns: readonly ['storeId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'store';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'favorite';
+                    readonly columns: readonly ['productId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'product';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -2824,6 +2958,25 @@ type ContractBase = Omit<
                     readonly value: DefaultLiteralValue<'pg/text@1', 'not_submitted'>;
                   };
                 };
+                readonly referralCode: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly referredBy: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly referralRewarded: {
+                  readonly nativeType: 'bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                };
                 readonly createdAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -2838,7 +2991,10 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [{ readonly columns: readonly ['email'] }];
+              uniques: readonly [
+                { readonly columns: readonly ['email'] },
+                { readonly columns: readonly ['referralCode'] },
+              ];
               indexes: readonly [];
               foreignKeys: readonly [];
             };
@@ -2981,6 +3137,7 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'GstInvoice';
     };
+    readonly favorite: { readonly namespace: 'public' & NamespaceId; readonly model: 'Favorite' };
   };
   readonly domain: {
     readonly namespaces: {
@@ -3427,6 +3584,76 @@ type ContractBase = Omit<
                 readonly buyerId: { readonly column: 'buyerId' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
+              };
+            };
+          };
+          readonly Favorite: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly storeId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly productId: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly product: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Product';
+                };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['productId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly store: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Store';
+                };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['storeId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'favorite';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly userId: { readonly column: 'userId' };
+                readonly storeId: { readonly column: 'storeId' };
+                readonly productId: { readonly column: 'productId' };
+                readonly createdAt: { readonly column: 'createdAt' };
               };
             };
           };
@@ -4125,6 +4352,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly favoritedBy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Favorite';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['productId'];
+                };
+              };
               readonly orderItems: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -4450,6 +4688,17 @@ type ContractBase = Omit<
               };
             };
             readonly relations: {
+              readonly favoritedBy: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Favorite';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['storeId'];
+                };
+              };
               readonly orders: {
                 readonly to: {
                   readonly namespace: 'public' & NamespaceId;
@@ -4529,6 +4778,18 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly referralCode: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly referredBy: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly referralRewarded: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -4584,6 +4845,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['buyerId'];
+                };
+              };
+              readonly favorites: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Favorite';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
                 };
               };
               readonly kycDocuments: {
@@ -4741,6 +5013,9 @@ type ContractBase = Omit<
                 readonly role: { readonly column: 'role' };
                 readonly walletBalance: { readonly column: 'walletBalance' };
                 readonly kycStatus: { readonly column: 'kycStatus' };
+                readonly referralCode: { readonly column: 'referralCode' };
+                readonly referredBy: { readonly column: 'referredBy' };
+                readonly referralRewarded: { readonly column: 'referralRewarded' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };

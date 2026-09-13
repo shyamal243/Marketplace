@@ -162,11 +162,26 @@ app.post("/signup", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const { referralCode: incomingReferralCode } = req.body;
+
+    let referredByUserId: number | null = null;
+
+    if (incomingReferralCode) {
+      const referrer = await db.orm.public.User.where({ referralCode: incomingReferralCode }).first();
+      if (referrer) {
+        referredByUserId = referrer.id;
+      }
+    }
+
+    const myReferralCode = crypto.randomBytes(4).toString("hex");
+
     const user = await db.orm.public.User.create({
       email,
       password: hashedPassword,
       name,
       role: role ?? "buyer",
+      referralCode: myReferralCode,
+      referredBy: referredByUserId,
     });
 
     const { password: _, ...userWithoutPassword } = user;
@@ -592,6 +607,39 @@ app.post("/bids/:id/accept", requireAuth, async (req: AuthRequest, res) => {
       type: "bid_accepted",
       userId: bid.sellerId,
     });
+
+    const buyerAccount = await db.orm.public.User.where({ id: demand.buyerId }).first();
+
+    if (buyerAccount && buyerAccount.referredBy && !buyerAccount.referralRewarded) {
+      const REFERRAL_REWARD = 50;
+
+      await db.transaction(async (tx) => {
+        const referrer = await tx.orm.public.User.where({ id: buyerAccount.referredBy! }).first();
+
+        if (referrer) {
+          await tx.orm.public.User.where({ id: referrer.id }).update({
+            walletBalance: referrer.walletBalance + REFERRAL_REWARD,
+          });
+          await tx.orm.public.WalletTransaction.create({
+            amount: REFERRAL_REWARD,
+            type: "credit",
+            reason: "referral_reward",
+            userId: referrer.id,
+          });
+        }
+
+        await tx.orm.public.User.where({ id: buyerAccount.id }).update({
+          walletBalance: buyerAccount.walletBalance + REFERRAL_REWARD,
+          referralRewarded: true,
+        });
+        await tx.orm.public.WalletTransaction.create({
+          amount: REFERRAL_REWARD,
+          type: "credit",
+          reason: "referral_reward",
+          userId: buyerAccount.id,
+        });
+      });
+    }
 
     res.status(201).json(order);
   } catch (error) {
@@ -2348,6 +2396,75 @@ app.get("/stores/:id/analytics", requireAuth, async (req: AuthRequest, res) => {
       totalProducts: products.length,
       bestSellingProducts: bestSelling,
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+app.post("/favorites", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { storeId, productId } = req.body;
+
+    if (!storeId && !productId) {
+      return res.status(400).json({ error: "Either storeId or productId is required" });
+    }
+
+    const existing = await db.orm.public.Favorite.where({
+      userId: req.userId!,
+      storeId: storeId ?? null,
+      productId: productId ?? null,
+    }).first();
+
+    if (existing) {
+      return res.status(400).json({ error: "Already in your favorites" });
+    }
+
+    const favorite = await db.orm.public.Favorite.create({
+      userId: req.userId!,
+      storeId: storeId ?? null,
+      productId: productId ?? null,
+    });
+
+    res.status(201).json(favorite);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/favorites/:id/remove", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const favoriteId = Number(req.params.id);
+
+    const favorite = await db.orm.public.Favorite.where({ id: favoriteId }).first();
+
+    if (!favorite || favorite.userId !== req.userId) {
+      return res.status(404).json({ error: "Favorite not found" });
+    }
+
+    await db.orm.public.Favorite.where({ id: favoriteId }).delete();
+
+    res.status(200).json({ message: "Removed from favorites" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/favorites/mine", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const favorites = await db.orm.public.Favorite.where({ userId: req.userId! }).all();
+    res.status(200).json(favorites);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/referral/mine", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const user = await db.orm.public.User.where({ id: req.userId! }).first();
+    res.status(200).json({ referralCode: user?.referralCode });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });

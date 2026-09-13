@@ -28,6 +28,10 @@
       "model": "Demand",
       "namespace": "public"
     },
+    "favorite": {
+      "model": "Favorite",
+      "namespace": "public"
+    },
     "gstInvoice": {
       "model": "GstInvoice",
       "namespace": "public"
@@ -800,6 +804,113 @@
               },
               "namespaceId": "public",
               "table": "demand"
+            }
+          },
+          "Favorite": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "productId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "storeId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "product": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "productId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Product",
+                  "namespace": "public"
+                }
+              },
+              "store": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "storeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Store",
+                  "namespace": "public"
+                }
+              },
+              "user": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "productId": {
+                  "column": "productId"
+                },
+                "storeId": {
+                  "column": "storeId"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "favorite"
             }
           },
           "GstInvoice": {
@@ -1915,6 +2026,21 @@
               }
             },
             "relations": {
+              "favoritedBy": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "productId"
+                  ]
+                },
+                "to": {
+                  "model": "Favorite",
+                  "namespace": "public"
+                }
+              },
               "orderItems": {
                 "cardinality": "1:N",
                 "on": {
@@ -2427,6 +2553,21 @@
               }
             },
             "relations": {
+              "favoritedBy": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "storeId"
+                  ]
+                },
+                "to": {
+                  "model": "Favorite",
+                  "namespace": "public"
+                }
+              },
               "orders": {
                 "cardinality": "1:N",
                 "on": {
@@ -2557,6 +2698,27 @@
                   "kind": "scalar"
                 }
               },
+              "referralCode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "referralRewarded": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "referredBy": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "role": {
                 "nullable": false,
                 "type": {
@@ -2637,6 +2799,21 @@
                 },
                 "to": {
                   "model": "Demand",
+                  "namespace": "public"
+                }
+              },
+              "favorites": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "Favorite",
                   "namespace": "public"
                 }
               },
@@ -2855,6 +3032,15 @@
                 },
                 "password": {
                   "column": "password"
+                },
+                "referralCode": {
+                  "column": "referralCode"
+                },
+                "referralRewarded": {
+                  "column": "referralRewarded"
+                },
+                "referredBy": {
+                  "column": "referredBy"
                 },
                 "role": {
                   "column": "role"
@@ -3573,6 +3759,133 @@
                 ]
               },
               "uniques": []
+            },
+            "favorite": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "productId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "storeId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "userId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "favorite"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "storeId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "favorite"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "store"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "productId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "favorite"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "product"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "productId"
+                  ],
+                  "name": "favorite_productId_idx_5858600a",
+                  "prefix": "favorite_productId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "storeId"
+                  ],
+                  "name": "favorite_storeId_idx_c545737d",
+                  "prefix": "favorite_storeId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "favorite_userId_idx_a489d58a",
+                  "prefix": "favorite_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "userId",
+                    "storeId",
+                    "productId"
+                  ]
+                }
+              ]
             },
             "gstInvoice": {
               "columns": {
@@ -5068,6 +5381,25 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "referralCode": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "referralRewarded": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "referredBy": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
                 "role": {
                   "codecId": "pg/text@1",
                   "default": {
@@ -5107,6 +5439,11 @@
                 {
                   "columns": [
                     "email"
+                  ]
+                },
+                {
+                  "columns": [
+                    "referralCode"
                   ]
                 }
               ]
@@ -5193,7 +5530,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5bf9bda6461c58a9fe3a63a44562c3cd966549471b6df0ae7f1f4bac1faa4cb4"
+    "storageHash": "822f65ddf5954fada1ee7087f556bcfc130942e4518406066bc46753c61391ab"
   },
   "capabilities": {
     "postgres": {

@@ -1,0 +1,170 @@
+[
+  {
+    "id": "column.public.user.referralCode",
+    "label": "Add column \"referralCode\" to \"user\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "referralCode",
+        "table": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"referralCode\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "referralCode"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"referralCode\"",
+        "sql": "ALTER TABLE \"public\".\"user\" ADD COLUMN \"referralCode\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"referralCode\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "referralCode"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.user.referralRewarded",
+    "label": "Add column \"referralRewarded\" to \"user\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "referralRewarded",
+        "table": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"referralRewarded\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "referralRewarded"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"referralRewarded\"",
+        "sql": "ALTER TABLE \"public\".\"user\" ADD COLUMN \"referralRewarded\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"referralRewarded\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "referralRewarded"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.user.referredBy",
+    "label": "Add column \"referredBy\" to \"user\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "referredBy",
+        "table": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"referredBy\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "referredBy"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"referredBy\"",
+        "sql": "ALTER TABLE \"public\".\"user\" ADD COLUMN \"referredBy\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"referredBy\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "referredBy"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.user.user_referralCode_key",
+    "label": "Add unique constraint on \"user\" (referralCode)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "user_referralCode_key",
+        "table": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"user_referralCode_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "user_referralCode_key",
+          "public",
+          "\"public\".\"user\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"user_referralCode_key\"",
+        "sql": "ALTER TABLE \"public\".\"user\" ADD CONSTRAINT \"user_referralCode_key\" UNIQUE (\"referralCode\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"user_referralCode_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "user_referralCode_key",
+          "public",
+          "\"public\".\"user\""
+        ]
+      }
+    ]
+  }
+]
