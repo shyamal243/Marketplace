@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'822f65ddf5954fada1ee7087f556bcfc130942e4518406066bc46753c61391ab'>;
+  StorageHashBase<'1c09f067ae5d7140ec35f7edda0248ad1e8c5e5d44c2324026b518703f6f4437'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -449,7 +449,7 @@ export type FieldOutputTypes = {
       readonly role: CodecTypes['pg/text@1']['output'];
       readonly walletBalance: CodecTypes['pg/int4@1']['output'];
       readonly kycStatus: CodecTypes['pg/text@1']['output'];
-      readonly referralCode: CodecTypes['pg/text@1']['output'] | null;
+      readonly referralCode: CodecTypes['pg/text@1']['output'];
       readonly referredBy: CodecTypes['pg/int4@1']['output'] | null;
       readonly referralRewarded: CodecTypes['pg/bool@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -676,7 +676,7 @@ export type FieldInputTypes = {
       readonly role: CodecTypes['pg/text@1']['input'];
       readonly walletBalance: CodecTypes['pg/int4@1']['input'];
       readonly kycStatus: CodecTypes['pg/text@1']['input'];
-      readonly referralCode: CodecTypes['pg/text@1']['input'] | null;
+      readonly referralCode: CodecTypes['pg/text@1']['input'];
       readonly referredBy: CodecTypes['pg/int4@1']['input'] | null;
       readonly referralRewarded: CodecTypes['pg/bool@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -902,7 +902,7 @@ export type StorageColumnTypes = {
       readonly kycStatus: CodecTypes['pg/text@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly password: CodecTypes['pg/text@1']['output'];
-      readonly referralCode: CodecTypes['pg/text@1']['output'] | null;
+      readonly referralCode: CodecTypes['pg/text@1']['output'];
       readonly referralRewarded: CodecTypes['pg/bool@1']['output'];
       readonly referredBy: CodecTypes['pg/int4@1']['output'] | null;
       readonly role: CodecTypes['pg/text@1']['output'];
@@ -1129,7 +1129,7 @@ export type StorageColumnInputTypes = {
       readonly kycStatus: CodecTypes['pg/text@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly password: CodecTypes['pg/text@1']['input'];
-      readonly referralCode: CodecTypes['pg/text@1']['input'] | null;
+      readonly referralCode: CodecTypes['pg/text@1']['input'];
       readonly referralRewarded: CodecTypes['pg/bool@1']['input'];
       readonly referredBy: CodecTypes['pg/int4@1']['input'] | null;
       readonly role: CodecTypes['pg/text@1']['input'];
@@ -2961,7 +2961,7 @@ type ContractBase = Omit<
                 readonly referralCode: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
+                  readonly nullable: false;
                 };
                 readonly referredBy: {
                   readonly nativeType: 'int4';
@@ -4779,7 +4779,7 @@ type ContractBase = Omit<
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly referralCode: {
-                readonly nullable: true;
+                readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
               readonly referredBy: {

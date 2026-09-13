@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'822f65ddf5954fada1ee7087f556bcfc130942e4518406066bc46753c61391ab'>;
+  StorageHashBase<'b0c57b37eee7c45ba340a236186fe7c095494c38b2d7734ae1a516ababba66d1'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -449,9 +449,6 @@ export type FieldOutputTypes = {
       readonly role: CodecTypes['pg/text@1']['output'];
       readonly walletBalance: CodecTypes['pg/int4@1']['output'];
       readonly kycStatus: CodecTypes['pg/text@1']['output'];
-      readonly referralCode: CodecTypes['pg/text@1']['output'] | null;
-      readonly referredBy: CodecTypes['pg/int4@1']['output'] | null;
-      readonly referralRewarded: CodecTypes['pg/bool@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -676,9 +673,6 @@ export type FieldInputTypes = {
       readonly role: CodecTypes['pg/text@1']['input'];
       readonly walletBalance: CodecTypes['pg/int4@1']['input'];
       readonly kycStatus: CodecTypes['pg/text@1']['input'];
-      readonly referralCode: CodecTypes['pg/text@1']['input'] | null;
-      readonly referredBy: CodecTypes['pg/int4@1']['input'] | null;
-      readonly referralRewarded: CodecTypes['pg/bool@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -902,9 +896,6 @@ export type StorageColumnTypes = {
       readonly kycStatus: CodecTypes['pg/text@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly password: CodecTypes['pg/text@1']['output'];
-      readonly referralCode: CodecTypes['pg/text@1']['output'] | null;
-      readonly referralRewarded: CodecTypes['pg/bool@1']['output'];
-      readonly referredBy: CodecTypes['pg/int4@1']['output'] | null;
       readonly role: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly walletBalance: CodecTypes['pg/int4@1']['output'];
@@ -1129,9 +1120,6 @@ export type StorageColumnInputTypes = {
       readonly kycStatus: CodecTypes['pg/text@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly password: CodecTypes['pg/text@1']['input'];
-      readonly referralCode: CodecTypes['pg/text@1']['input'] | null;
-      readonly referralRewarded: CodecTypes['pg/bool@1']['input'];
-      readonly referredBy: CodecTypes['pg/int4@1']['input'] | null;
       readonly role: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly walletBalance: CodecTypes['pg/int4@1']['input'];
@@ -2958,25 +2946,6 @@ type ContractBase = Omit<
                     readonly value: DefaultLiteralValue<'pg/text@1', 'not_submitted'>;
                   };
                 };
-                readonly referralCode: {
-                  readonly nativeType: 'text';
-                  readonly codecId: 'pg/text@1';
-                  readonly nullable: true;
-                };
-                readonly referredBy: {
-                  readonly nativeType: 'int4';
-                  readonly codecId: 'pg/int4@1';
-                  readonly nullable: true;
-                };
-                readonly referralRewarded: {
-                  readonly nativeType: 'bool';
-                  readonly codecId: 'pg/bool@1';
-                  readonly nullable: false;
-                  readonly default: {
-                    readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
-                  };
-                };
                 readonly createdAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -2991,10 +2960,7 @@ type ContractBase = Omit<
                 };
               };
               primaryKey: { readonly columns: readonly ['id'] };
-              uniques: readonly [
-                { readonly columns: readonly ['email'] },
-                { readonly columns: readonly ['referralCode'] },
-              ];
+              uniques: readonly [{ readonly columns: readonly ['email'] }];
               indexes: readonly [];
               foreignKeys: readonly [];
             };
@@ -4778,18 +4744,6 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
-              readonly referralCode: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
-              };
-              readonly referredBy: {
-                readonly nullable: true;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
-              };
-              readonly referralRewarded: {
-                readonly nullable: false;
-                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
-              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -5013,9 +4967,6 @@ type ContractBase = Omit<
                 readonly role: { readonly column: 'role' };
                 readonly walletBalance: { readonly column: 'walletBalance' };
                 readonly kycStatus: { readonly column: 'kycStatus' };
-                readonly referralCode: { readonly column: 'referralCode' };
-                readonly referredBy: { readonly column: 'referredBy' };
-                readonly referralRewarded: { readonly column: 'referralRewarded' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };

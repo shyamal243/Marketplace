@@ -24,6 +24,10 @@ model User {
   tipsReceived         DeliveryTip[]        @relation("TipsReceived")
   kycDocuments         KycDocument[]
   kycStatus            String               @default("not_submitted") // "not_submitted", "pending", "approved", "rejected"
+  favorites            Favorite[]
+  referralCode         String?              @unique
+  referredBy           Int?
+  referralRewarded     Boolean              @default(false)
 
   createdAt            TimestamptzString    @default(now())
   updatedAt            TimestamptzString    @default(now())
@@ -146,6 +150,7 @@ model Product {
   store       Store             @relation(fields:[storeId], references:[id])
   storeId     Int
   orderItems  OrderItem[]
+  favoritedBy Favorite[]
   ratings     ProductRating[]
   createdAt   TimestamptzString @default(now())
   updatedAt   TimestamptzString @default(now())
@@ -253,6 +258,7 @@ model Store {
   isActive         Boolean           @default(true)
   products         Product[]
   orders           Order[]
+  favoritedBy      Favorite[]
   createdAt        TimestamptzString @default(now())
   updatedAt        TimestamptzString @default(now())
 }
@@ -299,4 +305,17 @@ model GstInvoice {
   gstAmount     Int
   totalAmount   Int
   createdAt     TimestamptzString @default(now())
+}
+
+model Favorite {
+  id        Int               @id @default(autoincrement())
+  user      User              @relation(fields:[userId], references:[id])
+  userId    Int
+  store     Store?            @relation(fields:[storeId], references:[id])
+  storeId   Int?
+  product   Product?          @relation(fields:[productId], references:[id])
+  productId Int?
+  createdAt TimestamptzString @default(now())
+
+  @@unique([userId, storeId, productId])
 }

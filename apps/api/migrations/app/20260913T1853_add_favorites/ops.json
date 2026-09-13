@@ -1,0 +1,326 @@
+[
+  {
+    "id": "table.favorite",
+    "label": "Create table \"favorite\"",
+    "summary": "Creates table \"favorite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "favorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"favorite\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"favorite\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"favorite\"",
+        "sql": "CREATE TABLE \"public\".\"favorite\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"productId\" int4,\n  \"storeId\" int4,\n  \"userId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"favorite\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"favorite\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.favorite.favorite_userId_storeId_productId_key",
+    "label": "Add unique constraint on \"favorite\" (userId, storeId, productId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "favorite_userId_storeId_productId_key",
+        "table": "favorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"favorite_userId_storeId_productId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "favorite_userId_storeId_productId_key",
+          "public",
+          "\"public\".\"favorite\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"favorite_userId_storeId_productId_key\"",
+        "sql": "ALTER TABLE \"public\".\"favorite\" ADD CONSTRAINT \"favorite_userId_storeId_productId_key\" UNIQUE (\"userId\", \"storeId\", \"productId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"favorite_userId_storeId_productId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "favorite_userId_storeId_productId_key",
+          "public",
+          "\"public\".\"favorite\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.favorite.favorite_productId_idx_5858600a",
+    "label": "Create index \"favorite_productId_idx_5858600a\" on \"favorite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "favorite_productId_idx_5858600a",
+        "table": "favorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"favorite_productId_idx_5858600a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"favorite_productId_idx_5858600a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"favorite_productId_idx_5858600a\"",
+        "sql": "CREATE INDEX \"favorite_productId_idx_5858600a\" ON \"public\".\"favorite\" (\"productId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"favorite_productId_idx_5858600a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"favorite_productId_idx_5858600a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.favorite.favorite_storeId_idx_c545737d",
+    "label": "Create index \"favorite_storeId_idx_c545737d\" on \"favorite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "favorite_storeId_idx_c545737d",
+        "table": "favorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"favorite_storeId_idx_c545737d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"favorite_storeId_idx_c545737d\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"favorite_storeId_idx_c545737d\"",
+        "sql": "CREATE INDEX \"favorite_storeId_idx_c545737d\" ON \"public\".\"favorite\" (\"storeId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"favorite_storeId_idx_c545737d\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"favorite_storeId_idx_c545737d\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.favorite.favorite_userId_idx_a489d58a",
+    "label": "Create index \"favorite_userId_idx_a489d58a\" on \"favorite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "favorite_userId_idx_a489d58a",
+        "table": "favorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"favorite_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"favorite_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"favorite_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"favorite_userId_idx_a489d58a\" ON \"public\".\"favorite\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"favorite_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"favorite_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.favorite.favorite_userId_fkey",
+    "label": "Add foreign key \"favorite_userId_fkey\" on \"favorite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "favorite_userId_fkey",
+        "table": "favorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"favorite_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "favorite_userId_fkey",
+          "public",
+          "\"public\".\"favorite\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"favorite_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"favorite\"\nADD CONSTRAINT \"favorite_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"favorite_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "favorite_userId_fkey",
+          "public",
+          "\"public\".\"favorite\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.favorite.favorite_storeId_fkey",
+    "label": "Add foreign key \"favorite_storeId_fkey\" on \"favorite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "favorite_storeId_fkey",
+        "table": "favorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"favorite_storeId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "favorite_storeId_fkey",
+          "public",
+          "\"public\".\"favorite\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"favorite_storeId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"favorite\"\nADD CONSTRAINT \"favorite_storeId_fkey\"\nFOREIGN KEY (\"storeId\")\nREFERENCES \"public\".\"store\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"favorite_storeId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "favorite_storeId_fkey",
+          "public",
+          "\"public\".\"favorite\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.favorite.favorite_productId_fkey",
+    "label": "Add foreign key \"favorite_productId_fkey\" on \"favorite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "favorite_productId_fkey",
+        "table": "favorite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"favorite_productId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "favorite_productId_fkey",
+          "public",
+          "\"public\".\"favorite\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"favorite_productId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"favorite\"\nADD CONSTRAINT \"favorite_productId_fkey\"\nFOREIGN KEY (\"productId\")\nREFERENCES \"public\".\"product\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"favorite_productId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "favorite_productId_fkey",
+          "public",
+          "\"public\".\"favorite\""
+        ]
+      }
+    ]
+  }
+]
