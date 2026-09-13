@@ -364,6 +364,42 @@ app.get("/users/:id/reviews", async (req, res) => {
   }
 });
 
+app.get("/users/:id/profile", async (req, res) => {
+  try {
+    const userId = Number(req.params.id);
+
+    const user = await db.orm.public.User.where({ id: userId }).first();
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const reviews = await db.orm.public.Review.where({ revieweeId: userId }).all();
+
+    const completedOrders = await db.orm.public.Order.where({
+      sellerId: userId,
+      status: "delivered",
+    }).all();
+
+    const averageRating =
+      reviews.length > 0
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+        : null;
+
+    const { password: _, ...userWithoutPassword } = user;
+
+    res.status(200).json({
+      user: userWithoutPassword,
+      averageRating,
+      totalReviews: reviews.length,
+      completedOrders: completedOrders.length,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.get("/notifications", requireAuth, async (req: AuthRequest, res) => {
   try {
     const notifications = await db.orm.public.Notification.where({ userId: req.userId! }).all();
