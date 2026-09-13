@@ -2028,6 +2028,70 @@ app.get("/stores/:id/products", async (req, res) => {
   }
 });
 
+app.get("/stores/nearby", async (req, res) => {
+  try {
+    const { latitude, longitude, radiusKm } = req.query;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({ error: "latitude and longitude are required" });
+    }
+
+    const lat = Number(latitude);
+    const lon = Number(longitude);
+    const maxRadius = radiusKm ? Number(radiusKm) : 10;
+
+    const allStores = await db.orm.public.Store.where({ isActive: true }).all();
+
+    const nearby = allStores
+      .filter((s) => s.latitude !== null && s.longitude !== null)
+      .map((s) => {
+        const R = 6371;
+        const dLat = ((s.latitude! - lat) * Math.PI) / 180;
+        const dLon = ((s.longitude! - lon) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((lat * Math.PI) / 180) *
+            Math.cos((s.latitude! * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return { ...s, distanceKm: Math.round(R * c * 10) / 10 };
+      })
+      .filter((s) => s.distanceKm <= maxRadius)
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+
+    res.status(200).json(nearby);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/products/search", async (req, res) => {
+  try {
+    const { search, maxPrice } = req.query;
+
+    let products = await db.orm.public.Product.where({ isActive: true }).all();
+
+    if (search) {
+      const term = String(search).toLowerCase();
+      products = products.filter(
+        (p) => p.name.toLowerCase().includes(term) || (p.description ?? "").toLowerCase().includes(term)
+      );
+    }
+
+    if (maxPrice) {
+      const max = Number(maxPrice);
+      products = products.filter((p) => p.price <= max);
+    }
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/products/:id/rate", requireAuth, async (req: AuthRequest, res) => {
   try {
     const productId = Number(req.params.id);
@@ -2146,6 +2210,19 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
 
     const totalAmount = subtotal + deliveryFeeAmount;
 
+        const { gstCategory } = req.body;
+
+    const gstRate = gstCategory
+      ? await db.orm.public.GstRate.where({ category: gstCategory }).first()
+      : null;
+
+    const gstRatePercent = gstRate?.ratePercent ?? 0;
+    const gstAmount = Math.round((subtotal * gstRatePercent) / (100 + gstRatePercent));
+
+    const commissionSetting = await db.orm.public.PlatformSetting.where({ key: "commission_percent" }).first();
+    const commissionPercent = commissionSetting ? Number(commissionSetting.value) : 0;
+    const commissionAmount = Math.round((subtotal * commissionPercent) / 100);
+
     const order = await db.transaction(async (tx) => {
       const newOrder = await tx.orm.public.Order.create({
         orderType: "store_order",
@@ -2154,8 +2231,20 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
         sellerId: store.sellerId,
         amount: totalAmount,
         deliveryFeeAmount,
+        gstCategory: gstCategory ?? null,
+        gstRatePercent,
+        gstAmount,
+        commissionAmount,
         status: "confirmed",
       });
+
+            if (commissionAmount > 0) {
+        await tx.orm.public.PlatformEarning.create({
+          type: "commission",
+          amount: commissionAmount,
+          orderId: newOrder.id,
+        });
+      }
 
       for (const item of validatedItems) {
         await tx.orm.public.OrderItem.create({
