@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'e8fe871d9ddb1ced6cda9bd7ced8841bf2925844b97e5a32d11ff761fc09d3eb'>;
+  StorageHashBase<'3f85f8eab2acfb2127e57e28ee0f78a9bccac442e18b13db9e5ac7beca9857c0'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -409,6 +409,15 @@ export type FieldOutputTypes = {
       readonly customerId: CodecTypes['pg/int4@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly RazorpayOrderMapping: {
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly razorpayOrderId: CodecTypes['pg/text@1']['output'];
+      readonly purpose: CodecTypes['pg/text@1']['output'];
+      readonly referenceId: CodecTypes['pg/int4@1']['output'];
+      readonly userId: CodecTypes['pg/int4@1']['output'];
+      readonly amount: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly ReturnRequest: {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly orderId: CodecTypes['pg/int4@1']['output'];
@@ -636,6 +645,15 @@ export type FieldInputTypes = {
       readonly comment: CodecTypes['pg/text@1']['input'] | null;
       readonly productId: CodecTypes['pg/int4@1']['input'];
       readonly customerId: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly RazorpayOrderMapping: {
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly razorpayOrderId: CodecTypes['pg/text@1']['input'];
+      readonly purpose: CodecTypes['pg/text@1']['input'];
+      readonly referenceId: CodecTypes['pg/int4@1']['input'];
+      readonly userId: CodecTypes['pg/int4@1']['input'];
+      readonly amount: CodecTypes['pg/int4@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly ReturnRequest: {
@@ -867,6 +885,15 @@ export type StorageColumnTypes = {
       readonly productId: CodecTypes['pg/int4@1']['output'];
       readonly rating: CodecTypes['pg/int4@1']['output'];
     };
+    readonly razorpayOrderMapping: {
+      readonly amount: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly purpose: CodecTypes['pg/text@1']['output'];
+      readonly razorpayOrderId: CodecTypes['pg/text@1']['output'];
+      readonly referenceId: CodecTypes['pg/int4@1']['output'];
+      readonly userId: CodecTypes['pg/int4@1']['output'];
+    };
     readonly returnRequest: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly id: CodecTypes['pg/int4@1']['output'];
@@ -1095,6 +1122,15 @@ export type StorageColumnInputTypes = {
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly productId: CodecTypes['pg/int4@1']['input'];
       readonly rating: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly razorpayOrderMapping: {
+      readonly amount: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly purpose: CodecTypes['pg/text@1']['input'];
+      readonly razorpayOrderId: CodecTypes['pg/text@1']['input'];
+      readonly referenceId: CodecTypes['pg/int4@1']['input'];
+      readonly userId: CodecTypes['pg/int4@1']['input'];
     };
     readonly returnRequest: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -2617,6 +2653,54 @@ type ContractBase = Omit<
                 },
               ];
             };
+            readonly razorpayOrderMapping: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                };
+                readonly razorpayOrderId: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly purpose: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly referenceId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly userId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly amount: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [{ readonly columns: readonly ['razorpayOrderId'] }];
+              indexes: readonly [];
+              foreignKeys: readonly [];
+            };
             readonly returnRequest: {
               columns: {
                 readonly id: {
@@ -3156,6 +3240,10 @@ type ContractBase = Omit<
       readonly model: 'GstInvoice';
     };
     readonly favorite: { readonly namespace: 'public' & NamespaceId; readonly model: 'Favorite' };
+    readonly razorpayOrderMapping: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'RazorpayOrderMapping';
+    };
   };
   readonly domain: {
     readonly namespaces: {
@@ -4491,6 +4579,55 @@ type ContractBase = Omit<
                 readonly comment: { readonly column: 'comment' };
                 readonly productId: { readonly column: 'productId' };
                 readonly customerId: { readonly column: 'customerId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+              };
+            };
+          };
+          readonly RazorpayOrderMapping: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly razorpayOrderId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly purpose: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly referenceId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly amount: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: Record<string, never>;
+            readonly storage: {
+              readonly table: 'razorpayOrderMapping';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly razorpayOrderId: { readonly column: 'razorpayOrderId' };
+                readonly purpose: { readonly column: 'purpose' };
+                readonly referenceId: { readonly column: 'referenceId' };
+                readonly userId: { readonly column: 'userId' };
+                readonly amount: { readonly column: 'amount' };
                 readonly createdAt: { readonly column: 'createdAt' };
               };
             };

@@ -321,3 +321,13 @@ model Favorite {
 
   @@unique([userId, storeId, productId])
 }
+
+model RazorpayOrderMapping {
+  id              Int               @id @default(autoincrement())
+  razorpayOrderId String            @unique
+  purpose         String // "order_payment", "wallet_topup", "booking_fee"
+  referenceId     Int
+  userId          Int
+  amount          Int
+  createdAt       TimestamptzString @default(now())
+}
