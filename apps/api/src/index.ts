@@ -268,6 +268,63 @@ app.post("/orders/:id/deliver", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+app.post("/orders/:id/review", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    const { rating, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: "Rating must be between 1 and 5" });
+    }
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the buyer for this order" });
+    }
+
+    if (order.status !== "delivered") {
+      return res.status(400).json({ error: "Can only review delivered orders" });
+    }
+
+    const existingReview = await db.orm.public.Review.where({ orderId: order.id }).first();
+
+    if (existingReview) {
+      return res.status(400).json({ error: "This order has already been reviewed" });
+    }
+
+    const review = await db.orm.public.Review.create({
+      rating,
+      comment,
+      orderId: order.id,
+      reviewerId: order.buyerId,
+      revieweeId: order.sellerId,
+    });
+
+    res.status(201).json(review);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/users/:id/reviews", async (req, res) => {
+  try {
+    const revieweeId = Number(req.params.id);
+
+    const reviews = await db.orm.public.Review.where({ revieweeId }).all();
+
+    res.status(200).json(reviews);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });

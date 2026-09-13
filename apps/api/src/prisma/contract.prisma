@@ -1,16 +1,19 @@
 // use prisma-next
 model User {
-  id             Int               @id @default(autoincrement())
-  email          String            @unique
-  password       String
-  name           String
-  role           String            @default("buyer") // "buyer" or "seller"
-  demands        Demand[]
-  bids           Bid[]
-  ordersAsBuyer  Order[]           @relation("OrderBuyer")
-  ordersAsSeller Order[]           @relation("OrderSeller")
-  createdAt      TimestamptzString @default(now())
-  updatedAt      TimestamptzString @default(now())
+  id              Int               @id @default(autoincrement())
+  email           String            @unique
+  password        String
+  name            String
+  role            String            @default("buyer") // "buyer" or "seller"
+  demands         Demand[]
+  bids            Bid[]
+  ordersAsBuyer   Order[]           @relation("OrderBuyer")
+  ordersAsSeller  Order[]           @relation("OrderSeller")
+  reviewsGiven    Review[]          @relation("ReviewsGiven")
+  reviewsReceived Review[]          @relation("ReviewsReceived")
+
+  createdAt       TimestamptzString @default(now())
+  updatedAt       TimestamptzString @default(now())
 }
 
 model Demand {
@@ -52,6 +55,21 @@ model Order {
   buyerId   Int
   seller    User              @relation("OrderSeller", fields:[sellerId], references:[id])
   sellerId  Int
+  review    Review?
   createdAt TimestamptzString @default(now())
   updatedAt TimestamptzString @default(now())
+}
+
+model Review {
+  id         Int               @id @default(autoincrement())
+  rating     Int
+  comment    String?
+  order      Order             @relation(fields:[orderId], references:[id])
+  orderId    Int               @unique
+  reviewer   User              @relation("ReviewsGiven", fields:[reviewerId], references:[id])
+  reviewerId Int
+  reviewee   User              @relation("ReviewsReceived", fields:[revieweeId], references:[id])
+  revieweeId Int
+  createdAt  TimestamptzString @default(now())
+  updatedAt  TimestamptzString @default(now())
 }
