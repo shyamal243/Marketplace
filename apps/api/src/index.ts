@@ -88,6 +88,24 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { title, description, budget } = req.body;
+
+    const demand = await db.orm.public.Demand.create({
+      title,
+      description,
+      budget,
+      buyerId: req.userId!,
+    });
+
+    res.status(201).json(demand);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.get("/demands", async (req, res) => {
   try {
     const { status, maxBudget, search } = req.query;
@@ -117,16 +135,6 @@ app.get("/demands", async (req, res) => {
   }
 });
 
-app.get("/demands", async (req, res) => {
-  try {
-    const demands = await db.orm.public.Demand.where({}).all();
-    res.status(200).json(demands);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Something went wrong" });
-  }
-});
-
 app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { demandId, amount, message } = req.body;
@@ -137,6 +145,16 @@ app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
       message,
       sellerId: req.userId!,
     });
+
+    const demand = await db.orm.public.Demand.where({ id: demandId }).first();
+
+    if (demand) {
+      await db.orm.public.Notification.create({
+        message: `You received a new bid of ₹${amount} on "${demand.title}"`,
+        type: "new_bid",
+        userId: demand.buyerId,
+      });
+    }
 
     res.status(201).json(bid);
   } catch (error) {
@@ -188,6 +206,11 @@ app.post("/bids/:id/accept", requireAuth, async (req: AuthRequest, res) => {
 
     await db.orm.public.Bid.where({ id: bid.id }).update({ status: "accepted" });
     await db.orm.public.Demand.where({ id: demand.id }).update({ status: "fulfilled" });
+    await db.orm.public.Notification.create({
+      message: `Your bid of ₹${bid.amount} on "${demand.title}" was accepted!`,
+      type: "bid_accepted",
+      userId: bid.sellerId,
+    });
 
     res.status(201).json(order);
   } catch (error) {
@@ -217,6 +240,11 @@ app.post("/bids/:id/reject", requireAuth, async (req: AuthRequest, res) => {
     }
 
     const updatedBid = await db.orm.public.Bid.where({ id: bid.id }).update({ status: "rejected" });
+    await db.orm.public.Notification.create({
+      message: `Your bid of ₹${bid.amount} on "${demand.title}" was rejected`,
+      type: "bid_rejected",
+      userId: bid.sellerId,
+    });
 
     res.status(200).json(updatedBid);
   } catch (error) {
@@ -336,7 +364,35 @@ app.get("/users/:id/reviews", async (req, res) => {
   }
 });
 
+app.get("/notifications", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const notifications = await db.orm.public.Notification.where({ userId: req.userId! }).all();
+    res.status(200).json(notifications);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/notifications/:id/read", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const notificationId = Number(req.params.id);
+
+    const notification = await db.orm.public.Notification.where({ id: notificationId }).first();
+
+    if (!notification || notification.userId !== req.userId) {
+      return res.status(404).json({ error: "Notification not found" });
+    }
+
+    const updated = await db.orm.public.Notification.where({ id: notificationId }).update({ isRead: true });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
-

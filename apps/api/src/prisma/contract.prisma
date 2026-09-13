@@ -11,6 +11,7 @@ model User {
   ordersAsSeller  Order[]           @relation("OrderSeller")
   reviewsGiven    Review[]          @relation("ReviewsGiven")
   reviewsReceived Review[]          @relation("ReviewsReceived")
+  notifications   Notification[]
 
   createdAt       TimestamptzString @default(now())
   updatedAt       TimestamptzString @default(now())
@@ -72,4 +73,14 @@ model Review {
   revieweeId Int
   createdAt  TimestamptzString @default(now())
   updatedAt  TimestamptzString @default(now())
+}
+
+model Notification {
+  id        Int               @id @default(autoincrement())
+  message   String
+  type      String // "new_bid", "bid_accepted", "bid_rejected", "order_shipped", "order_delivered"
+  isRead    Boolean           @default(false)
+  user      User              @relation(fields:[userId], references:[id])
+  userId    Int
+  createdAt TimestamptzString @default(now())
 }
