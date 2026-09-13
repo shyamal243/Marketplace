@@ -669,6 +669,13 @@
                   "kind": "scalar"
                 }
               },
+              "hoursNeeded": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
@@ -770,6 +777,9 @@
                 },
                 "description": {
                   "column": "description"
+                },
+                "hoursNeeded": {
+                  "column": "hoursNeeded"
                 },
                 "id": {
                   "column": "id"
@@ -3365,6 +3375,11 @@
                   "nativeType": "text",
                   "nullable": true
                 },
+                "hoursNeeded": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
                 "id": {
                   "codecId": "pg/int4@1",
                   "default": {
@@ -4964,7 +4979,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "eee9f513d71091ba14a7d3ef7a6697aeb4ff88f244c46ac00ff7c5693c378573"
+    "storageHash": "8b8d8373107bb3f1d75cdae3a5a2c8f6151be7acd4ebd8939f423943f4f12561"
   },
   "capabilities": {
     "postgres": {

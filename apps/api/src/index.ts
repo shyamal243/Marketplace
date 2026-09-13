@@ -184,7 +184,7 @@ app.post("/logout", requireAuth, async (req: AuthRequest & { token?: string }, r
 
 app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { title, description, budget, durationHours } = req.body;
+    const { title, description, budget, durationHours, category, hoursNeeded } = req.body;
     if (req.userRole !== "buyer") {
       return res.status(403).json({ error: "Only buyers can post demands" });
     }
@@ -207,6 +207,8 @@ app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
       title,
       description,
       budget,
+      category,
+      hoursNeeded,
       buyerId: req.userId!,
       status: "pending_payment",
       bookingFeeAmount,
@@ -418,8 +420,8 @@ app.get("/demands", async (req, res) => {
 app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { demandId, amount, message } = req.body;
-        if (req.userRole !== "seller") {
-      return res.status(403).json({ error: "Only sellers can submit bids" });
+        if (req.userRole !== "seller" && req.userRole !== "worker") {
+      return res.status(403).json({ error: "Only sellers or workers can submit bids" });
     }
         if (typeof amount !== "number" || amount <= 0) {
       return res.status(400).json({ error: "amount must be a positive number" });

@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'eee9f513d71091ba14a7d3ef7a6697aeb4ff88f244c46ac00ff7c5693c378573'>;
+  StorageHashBase<'8b8d8373107bb3f1d75cdae3a5a2c8f6151be7acd4ebd8939f423943f4f12561'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -285,6 +285,7 @@ export type FieldOutputTypes = {
       readonly category: CodecTypes['pg/text@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly budget: CodecTypes['pg/int4@1']['output'] | null;
+      readonly hoursNeeded: CodecTypes['pg/int4@1']['output'] | null;
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly bookingFeeAmount: CodecTypes['pg/int4@1']['output'] | null;
       readonly bookingFeePaid: CodecTypes['pg/bool@1']['output'];
@@ -491,6 +492,7 @@ export type FieldInputTypes = {
       readonly category: CodecTypes['pg/text@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly budget: CodecTypes['pg/int4@1']['input'] | null;
+      readonly hoursNeeded: CodecTypes['pg/int4@1']['input'] | null;
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly bookingFeeAmount: CodecTypes['pg/int4@1']['input'] | null;
       readonly bookingFeePaid: CodecTypes['pg/bool@1']['input'];
@@ -700,6 +702,7 @@ export type StorageColumnTypes = {
       readonly category: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly description: CodecTypes['pg/text@1']['output'] | null;
+      readonly hoursNeeded: CodecTypes['pg/int4@1']['output'] | null;
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly status: CodecTypes['pg/text@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'];
@@ -906,6 +909,7 @@ export type StorageColumnInputTypes = {
       readonly category: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly description: CodecTypes['pg/text@1']['input'] | null;
+      readonly hoursNeeded: CodecTypes['pg/int4@1']['input'] | null;
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
@@ -1479,6 +1483,11 @@ type ContractBase = Omit<
                   readonly nullable: true;
                 };
                 readonly budget: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: true;
+                };
+                readonly hoursNeeded: {
                   readonly nativeType: 'int4';
                   readonly codecId: 'pg/int4@1';
                   readonly nullable: true;
@@ -3217,6 +3226,10 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
+              readonly hoursNeeded: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
               readonly status: {
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -3293,6 +3306,7 @@ type ContractBase = Omit<
                 readonly category: { readonly column: 'category' };
                 readonly description: { readonly column: 'description' };
                 readonly budget: { readonly column: 'budget' };
+                readonly hoursNeeded: { readonly column: 'hoursNeeded' };
                 readonly status: { readonly column: 'status' };
                 readonly bookingFeeAmount: { readonly column: 'bookingFeeAmount' };
                 readonly bookingFeePaid: { readonly column: 'bookingFeePaid' };
