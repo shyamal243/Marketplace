@@ -12,6 +12,10 @@
       "model": "BlockedToken",
       "namespace": "public"
     },
+    "deliveryAssignment": {
+      "model": "DeliveryAssignment",
+      "namespace": "public"
+    },
     "demand": {
       "model": "Demand",
       "namespace": "public"
@@ -42,6 +46,10 @@
     },
     "productRating": {
       "model": "ProductRating",
+      "namespace": "public"
+    },
+    "returnRequest": {
+      "model": "ReturnRequest",
       "namespace": "public"
     },
     "review": {
@@ -222,6 +230,108 @@
               },
               "namespaceId": "public",
               "table": "blockedToken"
+            }
+          },
+          "DeliveryAssignment": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "deliveryPersonId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "orderId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "deliveryPerson": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "deliveryPersonId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "order": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "orderId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Order",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "deliveryPersonId": {
+                  "column": "deliveryPersonId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "orderId": {
+                  "column": "orderId"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "deliveryAssignment"
             }
           },
           "Demand": {
@@ -501,10 +611,24 @@
                   "kind": "scalar"
                 }
               },
+              "courierName": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "deliveryMode": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -538,6 +662,13 @@
               },
               "status": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "trackingNumber": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -582,6 +713,21 @@
                   "namespace": "public"
                 }
               },
+              "deliveryAssignment": {
+                "cardinality": "1:1",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "orderId"
+                  ]
+                },
+                "to": {
+                  "model": "DeliveryAssignment",
+                  "namespace": "public"
+                }
+              },
               "demand": {
                 "cardinality": "N:1",
                 "on": {
@@ -594,6 +740,21 @@
                 },
                 "to": {
                   "model": "Demand",
+                  "namespace": "public"
+                }
+              },
+              "returnRequest": {
+                "cardinality": "1:1",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "orderId"
+                  ]
+                },
+                "to": {
+                  "model": "ReturnRequest",
                   "namespace": "public"
                 }
               },
@@ -639,8 +800,14 @@
                 "buyerId": {
                   "column": "buyerId"
                 },
+                "courierName": {
+                  "column": "courierName"
+                },
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "deliveryMode": {
+                  "column": "deliveryMode"
                 },
                 "demandId": {
                   "column": "demandId"
@@ -656,6 +823,9 @@
                 },
                 "status": {
                   "column": "status"
+                },
+                "trackingNumber": {
+                  "column": "trackingNumber"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
@@ -1068,6 +1238,118 @@
               "table": "productRating"
             }
           },
+          "ReturnRequest": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "orderId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "reason": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "requestedById": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "order": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "orderId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Order",
+                  "namespace": "public"
+                }
+              },
+              "requestedBy": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "requestedById"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "orderId": {
+                  "column": "orderId"
+                },
+                "reason": {
+                  "column": "reason"
+                },
+                "requestedById": {
+                  "column": "requestedById"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "returnRequest"
+            }
+          },
           "Review": {
             "fields": {
               "comment": {
@@ -1280,6 +1562,21 @@
                   "namespace": "public"
                 }
               },
+              "deliveryAssignments": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "deliveryPersonId"
+                  ]
+                },
+                "to": {
+                  "model": "DeliveryAssignment",
+                  "namespace": "public"
+                }
+              },
               "demands": {
                 "cardinality": "1:N",
                 "on": {
@@ -1382,6 +1679,21 @@
                 },
                 "to": {
                   "model": "Product",
+                  "namespace": "public"
+                }
+              },
+              "returnRequests": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "requestedById"
+                  ]
+                },
+                "to": {
+                  "model": "ReturnRequest",
                   "namespace": "public"
                 }
               },
@@ -1717,6 +2029,112 @@
                 }
               ]
             },
+            "deliveryAssignment": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "deliveryPersonId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "orderId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "assigned"
+                  },
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "orderId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "deliveryAssignment"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "order"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "deliveryPersonId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "deliveryAssignment"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "deliveryPersonId"
+                  ],
+                  "name": "deliveryAssignment_deliveryPersonId_idx_02b8a2c8",
+                  "prefix": "deliveryAssignment_deliveryPersonId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "orderId"
+                  ]
+                }
+              ]
+            },
             "demand": {
               "columns": {
                 "bidWindowExpiresAt": {
@@ -1927,6 +2345,11 @@
                   "nativeType": "int4",
                   "nullable": false
                 },
+                "courierName": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "default": {
@@ -1935,6 +2358,11 @@
                   },
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "deliveryMode": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "demandId": {
                   "codecId": "pg/int4@1",
@@ -1972,6 +2400,11 @@
                   },
                   "nativeType": "text",
                   "nullable": false
+                },
+                "trackingNumber": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "updatedAt": {
                   "codecId": "pg/timestamptz-string@1",
@@ -2464,6 +2897,117 @@
                 }
               ]
             },
+            "returnRequest": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "orderId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "reason": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "requestedById": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "requested"
+                  },
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "orderId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "returnRequest"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "order"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "requestedById"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "returnRequest"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "requestedById"
+                  ],
+                  "name": "returnRequest_requestedById_idx_f9a56c66",
+                  "prefix": "returnRequest_requestedById_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "orderId"
+                  ]
+                }
+              ]
+            },
             "review": {
               "columns": {
                 "comment": {
@@ -2769,7 +3313,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "3b2d6895b83f9135284cdf89ac723dcb3db3acc3453db16eae16e015c0bd792f"
+    "storageHash": "5970733cd957f197dee0d032bc1624b27c5cf2ffce37be2d841c8891ae26fc88"
   },
   "capabilities": {
     "postgres": {

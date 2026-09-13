@@ -1,25 +1,27 @@
 // use prisma-next
 model User {
-  id              Int                  @id @default(autoincrement())
-  email           String               @unique
-  password        String
-  name            String
-  role            String               @default("buyer") // "buyer" or "seller"
-  demands         Demand[]
-  bids            Bid[]
-  ordersAsBuyer   Order[]              @relation("OrderBuyer")
-  ordersAsSeller  Order[]              @relation("OrderSeller")
-  reviewsGiven    Review[]             @relation("ReviewsGiven")
-  reviewsReceived Review[]             @relation("ReviewsReceived")
-  notifications   Notification[]
-  walletBalance   Int                  @default(0)
-  walletTxns      WalletTransaction[]
-  products        Product[]
-  productRatings  ProductRating[]
-  passwordResets  PasswordResetToken[]
+  id                  Int                  @id @default(autoincrement())
+  email               String               @unique
+  password            String
+  name                String
+  role                String               @default("buyer") // "buyer", "seller", "admin", "delivery"
+  demands             Demand[]
+  bids                Bid[]
+  ordersAsBuyer       Order[]              @relation("OrderBuyer")
+  ordersAsSeller      Order[]              @relation("OrderSeller")
+  reviewsGiven        Review[]             @relation("ReviewsGiven")
+  reviewsReceived     Review[]             @relation("ReviewsReceived")
+  notifications       Notification[]
+  walletBalance       Int                  @default(0)
+  walletTxns          WalletTransaction[]
+  products            Product[]
+  productRatings      ProductRating[]
+  passwordResets      PasswordResetToken[]
+  deliveryAssignments DeliveryAssignment[]
+  returnRequests      ReturnRequest[]
 
-  createdAt       TimestamptzString    @default(now())
-  updatedAt       TimestamptzString    @default(now())
+  createdAt           TimestamptzString    @default(now())
+  updatedAt           TimestamptzString    @default(now())
 }
 
 model Demand {
@@ -53,21 +55,26 @@ model Bid {
 }
 
 model Order {
-  id        Int               @id @default(autoincrement())
-  amount    Int
-  status    String            @default("confirmed") // "confirmed", "shipped", "delivered", "cancelled"
-  isPaid    Boolean           @default(false)
-  demand    Demand            @relation(fields:[demandId], references:[id])
-  demandId  Int
-  bid       Bid               @relation(fields:[bidId], references:[id])
-  bidId     Int
-  buyer     User              @relation("OrderBuyer", fields:[buyerId], references:[id])
-  buyerId   Int
-  seller    User              @relation("OrderSeller", fields:[sellerId], references:[id])
-  sellerId  Int
-  review    Review[]
-  createdAt TimestamptzString @default(now())
-  updatedAt TimestamptzString @default(now())
+  id                 Int                 @id @default(autoincrement())
+  amount             Int
+  status             String              @default("confirmed") // "confirmed", "shipped", "delivered", "cancelled"
+  isPaid             Boolean             @default(false)
+  demand             Demand              @relation(fields:[demandId], references:[id])
+  demandId           Int
+  bid                Bid                 @relation(fields:[bidId], references:[id])
+  bidId              Int
+  buyer              User                @relation("OrderBuyer", fields:[buyerId], references:[id])
+  buyerId            Int
+  seller             User                @relation("OrderSeller", fields:[sellerId], references:[id])
+  sellerId           Int
+  deliveryMode       String? // "local" or "courier"
+  trackingNumber     String?
+  courierName        String?
+  deliveryAssignment DeliveryAssignment?
+  returnRequest      ReturnRequest?
+  review             Review[]
+  createdAt          TimestamptzString   @default(now())
+  updatedAt          TimestamptzString   @default(now())
 }
 
 model Review {
@@ -159,4 +166,27 @@ model ProcessedPayment {
   id                Int               @id @default(autoincrement())
   razorpayPaymentId String            @unique
   createdAt         TimestamptzString @default(now())
+}
+
+model DeliveryAssignment {
+  id               Int               @id @default(autoincrement())
+  order            Order             @relation(fields:[orderId], references:[id])
+  orderId          Int               @unique
+  deliveryPerson   User              @relation(fields:[deliveryPersonId], references:[id])
+  deliveryPersonId Int
+  status           String            @default("assigned") // "assigned", "picked_up", "out_for_delivery", "delivered"
+  createdAt        TimestamptzString @default(now())
+  updatedAt        TimestamptzString @default(now())
+}
+
+model ReturnRequest {
+  id            Int               @id @default(autoincrement())
+  order         Order             @relation(fields:[orderId], references:[id])
+  orderId       Int               @unique
+  reason        String
+  status        String            @default("requested") // "requested", "approved", "rejected", "completed"
+  requestedBy   User              @relation(fields:[requestedById], references:[id])
+  requestedById Int
+  createdAt     TimestamptzString @default(now())
+  updatedAt     TimestamptzString @default(now())
 }
