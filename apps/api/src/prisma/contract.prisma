@@ -14,7 +14,7 @@ model User {
   notifications        Notification[]
   walletBalance        Int                  @default(0)
   walletTxns           WalletTransaction[]
-  products             Product[]
+  stores               Store[]
   productRatings       ProductRating[]
   passwordResets       PasswordResetToken[]
   deliveryAssignments  DeliveryAssignment[]
@@ -63,10 +63,14 @@ model Order {
   amount             Int
   status             String              @default("confirmed") // "confirmed", "shipped", "delivered", "cancelled"
   isPaid             Boolean             @default(false)
-  demand             Demand              @relation(fields:[demandId], references:[id])
-  demandId           Int
-  bid                Bid                 @relation(fields:[bidId], references:[id])
-  bidId              Int
+  orderType          String              @default("bid_order") // "bid_order" or "store_order"
+  demand             Demand?             @relation(fields:[demandId], references:[id])
+  demandId           Int?
+  bid                Bid?                @relation(fields:[bidId], references:[id])
+  bidId              Int?
+  store              Store?              @relation(fields:[storeId], references:[id])
+  storeId            Int?
+  items              OrderItem[]
   buyer              User                @relation("OrderBuyer", fields:[buyerId], references:[id])
   buyerId            Int
   seller             User                @relation("OrderSeller", fields:[sellerId], references:[id])
@@ -133,8 +137,9 @@ model Product {
   price       Int
   stock       Int               @default(0)
   isActive    Boolean           @default(true)
-  seller      User              @relation(fields:[sellerId], references:[id])
-  sellerId    Int
+  store       Store             @relation(fields:[storeId], references:[id])
+  storeId     Int
+  orderItems  OrderItem[]
   ratings     ProductRating[]
   createdAt   TimestamptzString @default(now())
   updatedAt   TimestamptzString @default(now())
@@ -227,4 +232,31 @@ model DeliveryTip {
   deliveryPerson       User               @relation("TipsReceived", fields:[deliveryPersonId], references:[id])
   deliveryPersonId     Int
   createdAt            TimestamptzString  @default(now())
+}
+
+model Store {
+  id               Int               @id @default(autoincrement())
+  seller           User              @relation(fields:[sellerId], references:[id])
+  sellerId         Int
+  name             String
+  address          String?
+  latitude         Float?
+  longitude        Float?
+  deliveryFeeBase  Int               @default(0)
+  deliveryFeePerKm Int               @default(0)
+  isActive         Boolean           @default(true)
+  products         Product[]
+  orders           Order[]
+  createdAt        TimestamptzString @default(now())
+  updatedAt        TimestamptzString @default(now())
+}
+
+model OrderItem {
+  id              Int     @id @default(autoincrement())
+  order           Order   @relation(fields:[orderId], references:[id])
+  orderId         Int
+  product         Product @relation(fields:[productId], references:[id])
+  productId       Int
+  quantity        Int
+  priceAtPurchase Int
 }
