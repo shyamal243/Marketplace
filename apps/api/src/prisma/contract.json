@@ -28,6 +28,10 @@
       "model": "Demand",
       "namespace": "public"
     },
+    "gstInvoice": {
+      "model": "GstInvoice",
+      "namespace": "public"
+    },
     "gstRate": {
       "model": "GstRate",
       "namespace": "public"
@@ -798,6 +802,113 @@
               "table": "demand"
             }
           },
+          "GstInvoice": {
+            "fields": {
+              "baseAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "buyerGstin": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "gstAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "invoiceNumber": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "orderId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "totalAmount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "order": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "orderId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Order",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "baseAmount": {
+                  "column": "baseAmount"
+                },
+                "buyerGstin": {
+                  "column": "buyerGstin"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "gstAmount": {
+                  "column": "gstAmount"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "invoiceNumber": {
+                  "column": "invoiceNumber"
+                },
+                "orderId": {
+                  "column": "orderId"
+                },
+                "totalAmount": {
+                  "column": "totalAmount"
+                }
+              },
+              "namespaceId": "public",
+              "table": "gstInvoice"
+            }
+          },
           "GstRate": {
             "fields": {
               "category": {
@@ -1244,6 +1355,21 @@
                 },
                 "to": {
                   "model": "Demand",
+                  "namespace": "public"
+                }
+              },
+              "gstInvoice": {
+                "cardinality": "1:1",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "orderId"
+                  ]
+                },
+                "to": {
+                  "model": "GstInvoice",
                   "namespace": "public"
                 }
               },
@@ -3448,6 +3574,94 @@
               },
               "uniques": []
             },
+            "gstInvoice": {
+              "columns": {
+                "baseAmount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "buyerGstin": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "gstAmount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "invoiceNumber": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "orderId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "totalAmount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "orderId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "gstInvoice"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "order"
+                  }
+                }
+              ],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "orderId"
+                  ]
+                },
+                {
+                  "columns": [
+                    "invoiceNumber"
+                  ]
+                }
+              ]
+            },
             "gstRate": {
               "columns": {
                 "category": {
@@ -4979,7 +5193,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "8b8d8373107bb3f1d75cdae3a5a2c8f6151be7acd4ebd8939f423943f4f12561"
+    "storageHash": "5bf9bda6461c58a9fe3a63a44562c3cd966549471b6df0ae7f1f4bac1faa4cb4"
   },
   "capabilities": {
     "postgres": {

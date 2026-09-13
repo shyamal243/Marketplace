@@ -88,6 +88,7 @@ model Order {
   deliveryFeeAmount  Int?
   deliveryAssignment DeliveryAssignment?
   returnRequest      ReturnRequest?
+  gstInvoice         GstInvoice?
   review             Review[]
   createdAt          TimestamptzString   @default(now())
   updatedAt          TimestamptzString   @default(now())
@@ -286,4 +287,16 @@ model PlatformEarning {
   orderId   Int?
   demandId  Int?
   createdAt TimestamptzString @default(now())
+}
+
+model GstInvoice {
+  id            Int               @id @default(autoincrement())
+  order         Order             @relation(fields:[orderId], references:[id])
+  orderId       Int               @unique
+  invoiceNumber String            @unique
+  buyerGstin    String?
+  baseAmount    Int
+  gstAmount     Int
+  totalAmount   Int
+  createdAt     TimestamptzString @default(now())
 }

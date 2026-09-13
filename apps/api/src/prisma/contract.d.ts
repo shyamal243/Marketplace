@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'8b8d8373107bb3f1d75cdae3a5a2c8f6151be7acd4ebd8939f423943f4f12561'>;
+  StorageHashBase<'5bf9bda6461c58a9fe3a63a44562c3cd966549471b6df0ae7f1f4bac1faa4cb4'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -294,6 +294,16 @@ export type FieldOutputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly GstInvoice: {
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly orderId: CodecTypes['pg/int4@1']['output'];
+      readonly invoiceNumber: CodecTypes['pg/text@1']['output'];
+      readonly buyerGstin: CodecTypes['pg/text@1']['output'] | null;
+      readonly baseAmount: CodecTypes['pg/int4@1']['output'];
+      readonly gstAmount: CodecTypes['pg/int4@1']['output'];
+      readonly totalAmount: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly GstRate: {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly category: CodecTypes['pg/text@1']['output'];
@@ -500,6 +510,16 @@ export type FieldInputTypes = {
       readonly buyerId: CodecTypes['pg/int4@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly GstInvoice: {
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly orderId: CodecTypes['pg/int4@1']['input'];
+      readonly invoiceNumber: CodecTypes['pg/text@1']['input'];
+      readonly buyerGstin: CodecTypes['pg/text@1']['input'] | null;
+      readonly baseAmount: CodecTypes['pg/int4@1']['input'];
+      readonly gstAmount: CodecTypes['pg/int4@1']['input'];
+      readonly totalAmount: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly GstRate: {
       readonly id: CodecTypes['pg/int4@1']['input'];
@@ -708,6 +728,16 @@ export type StorageColumnTypes = {
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
+    readonly gstInvoice: {
+      readonly baseAmount: CodecTypes['pg/int4@1']['output'];
+      readonly buyerGstin: CodecTypes['pg/text@1']['output'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly gstAmount: CodecTypes['pg/int4@1']['output'];
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly invoiceNumber: CodecTypes['pg/text@1']['output'];
+      readonly orderId: CodecTypes['pg/int4@1']['output'];
+      readonly totalAmount: CodecTypes['pg/int4@1']['output'];
+    };
     readonly gstRate: {
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/int4@1']['output'];
@@ -914,6 +944,16 @@ export type StorageColumnInputTypes = {
       readonly status: CodecTypes['pg/text@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+    };
+    readonly gstInvoice: {
+      readonly baseAmount: CodecTypes['pg/int4@1']['input'];
+      readonly buyerGstin: CodecTypes['pg/text@1']['input'] | null;
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly gstAmount: CodecTypes['pg/int4@1']['input'];
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly invoiceNumber: CodecTypes['pg/text@1']['input'];
+      readonly orderId: CodecTypes['pg/int4@1']['input'];
+      readonly totalAmount: CodecTypes['pg/int4@1']['input'];
     };
     readonly gstRate: {
       readonly category: CodecTypes['pg/text@1']['input'];
@@ -1558,6 +1598,75 @@ type ContractBase = Omit<
                   readonly target: {
                     readonly namespaceId: 'public' & NamespaceId;
                     readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
+            };
+            readonly gstInvoice: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                };
+                readonly orderId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly invoiceNumber: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly buyerGstin: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly baseAmount: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly gstAmount: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly totalAmount: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [
+                { readonly columns: readonly ['orderId'] },
+                { readonly columns: readonly ['invoiceNumber'] },
+              ];
+              indexes: readonly [];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'gstInvoice';
+                    readonly columns: readonly ['orderId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'order';
                     readonly columns: readonly ['id'];
                   };
                 },
@@ -2868,6 +2977,10 @@ type ContractBase = Omit<
       readonly namespace: 'public' & NamespaceId;
       readonly model: 'PlatformEarning';
     };
+    readonly gstInvoice: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'GstInvoice';
+    };
   };
   readonly domain: {
     readonly namespaces: {
@@ -3317,6 +3430,72 @@ type ContractBase = Omit<
               };
             };
           };
+          readonly GstInvoice: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly orderId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly invoiceNumber: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly buyerGstin: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly baseAmount: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly gstAmount: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly totalAmount: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly order: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'Order';
+                };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['orderId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'gstInvoice';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly orderId: { readonly column: 'orderId' };
+                readonly invoiceNumber: { readonly column: 'invoiceNumber' };
+                readonly buyerGstin: { readonly column: 'buyerGstin' };
+                readonly baseAmount: { readonly column: 'baseAmount' };
+                readonly gstAmount: { readonly column: 'gstAmount' };
+                readonly totalAmount: { readonly column: 'totalAmount' };
+                readonly createdAt: { readonly column: 'createdAt' };
+              };
+            };
+          };
           readonly GstRate: {
             readonly fields: {
               readonly id: {
@@ -3593,6 +3772,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['demandId'];
                   readonly targetFields: readonly ['id'];
+                };
+              };
+              readonly gstInvoice: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'GstInvoice';
+                };
+                readonly cardinality: '1:1';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['orderId'];
                 };
               };
               readonly items: {
