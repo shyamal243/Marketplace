@@ -2656,6 +2656,13 @@
           },
           "User": {
             "fields": {
+              "address": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -2693,6 +2700,13 @@
               },
               "password": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "phone": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -3015,6 +3029,9 @@
             },
             "storage": {
               "fields": {
+                "address": {
+                  "column": "address"
+                },
                 "createdAt": {
                   "column": "createdAt"
                 },
@@ -3032,6 +3049,9 @@
                 },
                 "password": {
                   "column": "password"
+                },
+                "phone": {
+                  "column": "phone"
                 },
                 "referralCode": {
                   "column": "referralCode"
@@ -5339,6 +5359,11 @@
             },
             "user": {
               "columns": {
+                "address": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "default": {
@@ -5380,6 +5405,11 @@
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": false
+                },
+                "phone": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "referralCode": {
                   "codecId": "pg/text@1",
@@ -5530,7 +5560,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "822f65ddf5954fada1ee7087f556bcfc130942e4518406066bc46753c61391ab"
+    "storageHash": "e8fe871d9ddb1ced6cda9bd7ced8841bf2925844b97e5a32d11ff761fc09d3eb"
   },
   "capabilities": {
     "postgres": {

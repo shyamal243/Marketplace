@@ -224,6 +224,127 @@ app.post("/login", loginLimiter, async (req, res) => {
   }
 });
 
+app.get("/me", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const user = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const { password: _, ...userWithoutPassword } = user;
+    res.status(200).json(userWithoutPassword);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/me/update", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { name, phone, address } = req.body;
+
+    const updateData: Record<string, unknown> = {};
+
+    if (name !== undefined) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (address !== undefined) updateData.address = address;
+
+    const updated = await db.orm.public.User.where({ id: req.userId! }).update(updateData);
+
+    if (!updated) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const { password: _, ...userWithoutPassword } = updated;
+    res.status(200).json(userWithoutPassword);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/me/change-password", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: "currentPassword and newPassword are required" });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: "New password must be at least 8 characters" });
+    }
+
+    const user = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const passwordMatches = await bcrypt.compare(currentPassword, user.password);
+
+    if (!passwordMatches) {
+      return res.status(401).json({ error: "Current password is incorrect" });
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await db.orm.public.User.where({ id: user.id }).update({ password: hashedPassword });
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/demands/mine", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const demands = await db.orm.public.Demand.where({ buyerId: req.userId! }).all();
+    res.status(200).json(demands);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/bids/mine", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const bids = await db.orm.public.Bid.where({ sellerId: req.userId! }).all();
+    res.status(200).json(bids);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/orders/mine", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const asBuyer = await db.orm.public.Order.where({ buyerId: req.userId! }).all();
+    const asSeller = await db.orm.public.Order.where({ sellerId: req.userId! }).all();
+
+    res.status(200).json({ asBuyer, asSeller });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/deliveries/mine", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "delivery") {
+      return res.status(403).json({ error: "Only delivery persons have delivery assignments" });
+    }
+
+    const assignments = await db.orm.public.DeliveryAssignment.where({ deliveryPersonId: req.userId! }).all();
+    res.status(200).json(assignments);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/logout", requireAuth, async (req: AuthRequest & { token?: string }, res) => {
   try {
     if (req.token) {
