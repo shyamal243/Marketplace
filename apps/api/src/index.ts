@@ -45,7 +45,47 @@ async function requireAuth(req: AuthRequest, res: express.Response, next: expres
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
-const requiredEnvVars = ["JWT_SECRET", "DATABASE_URL", "RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"];
+
+async function calculateRoadDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): Promise<number> {
+  try {
+    const response = await fetch("https://api.openrouteservice.org/v2/directions/driving-car", {
+      method: "POST",
+      headers: {
+        Authorization: process.env.ORS_API_KEY!,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        coordinates: [
+          [lon1, lat1],
+          [lon2, lat2],
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenRouteService returned status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const distanceMeters = data.routes[0].summary.distance;
+    return distanceMeters / 1000;
+  } catch (error) {
+    console.error("Distance calculation failed, falling back to straight-line:", error);
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+}
+
+const requiredEnvVars = ["JWT_SECRET", "DATABASE_URL", "RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "ORS_API_KEY"];
 
 for (const key of requiredEnvVars) {
   if (!process.env[key]) {
@@ -2000,6 +2040,125 @@ app.get("/products/:id", async (req, res) => {
       averageRating,
       totalRatings: ratings.length,
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { storeId, items, deliveryLatitude, deliveryLongitude, deliveryAddress } = req.body;
+
+    if (!storeId || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "storeId and a non-empty items array are required" });
+    }
+
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store || !store.isActive) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    let subtotal = 0;
+    const validatedItems: { productId: number; quantity: number; priceAtPurchase: number }[] = [];
+
+    for (const item of items) {
+      const { productId, quantity } = item;
+
+      if (!productId || !quantity || quantity <= 0) {
+        return res.status(400).json({ error: "Each item needs a valid productId and quantity" });
+      }
+
+      const product = await db.orm.public.Product.where({ id: productId }).first();
+
+      if (!product || !product.isActive || product.storeId !== storeId) {
+        return res.status(400).json({ error: `Product ${productId} is not available in this store` });
+      }
+
+      if (product.stock < quantity) {
+        return res.status(400).json({ error: `Not enough stock for "${product.name}" (only ${product.stock} left)` });
+      }
+
+      subtotal += product.price * quantity;
+      validatedItems.push({ productId, quantity, priceAtPurchase: product.price });
+    }
+
+    let deliveryFeeAmount = store.deliveryFeeBase;
+
+    if (deliveryLatitude && deliveryLongitude && store.latitude && store.longitude) {
+      const distanceKm = await calculateRoadDistanceKm(
+        store.latitude,
+        store.longitude,
+        deliveryLatitude,
+        deliveryLongitude
+      );
+      deliveryFeeAmount = store.deliveryFeeBase + Math.round(distanceKm * store.deliveryFeePerKm);
+    }
+
+    const totalAmount = subtotal + deliveryFeeAmount;
+
+    const order = await db.transaction(async (tx) => {
+      const newOrder = await tx.orm.public.Order.create({
+        orderType: "store_order",
+        storeId,
+        buyerId: req.userId!,
+        sellerId: store.sellerId,
+        amount: totalAmount,
+        deliveryFeeAmount,
+        status: "confirmed",
+      });
+
+      for (const item of validatedItems) {
+        await tx.orm.public.OrderItem.create({
+          orderId: newOrder.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          priceAtPurchase: item.priceAtPurchase,
+        });
+
+        const product = await tx.orm.public.Product.where({ id: item.productId }).first();
+
+        if (product) {
+          await tx.orm.public.Product.where({ id: item.productId }).update({
+            stock: product.stock - item.quantity,
+          });
+        }
+      }
+
+      return newOrder;
+    });
+
+    await db.orm.public.Notification.create({
+      message: `New order #${order.id} received at your store "${store.name}"`,
+      type: "new_store_order",
+      userId: store.sellerId,
+    });
+
+    res.status(201).json({ ...order, items: validatedItems, subtotal, deliveryFeeAmount, totalAmount });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/store-orders/:id", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order || order.orderType !== "store_order") {
+      return res.status(404).json({ error: "Store order not found" });
+    }
+
+    if (order.buyerId !== req.userId && order.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You are not part of this order" });
+    }
+
+    const items = await db.orm.public.OrderItem.where({ orderId }).all();
+
+    res.status(200).json({ ...order, items });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
