@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'bb0e431b6dc542dd8c1d809092cd9ac47980d294b7c64f9405e4487705406be9'>;
+  StorageHashBase<'df7c8d977505df231687b66b0bee5cee0d31990901d16a72c813919fa05d893a'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -696,7 +696,7 @@ type ContractBase = Omit<
                   readonly nullable: false;
                   readonly default: {
                     readonly kind: 'literal';
-                    readonly value: DefaultLiteralValue<'pg/text@1', 'open'>;
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'pending_payment'>;
                   };
                 };
                 readonly bookingFeeAmount: {

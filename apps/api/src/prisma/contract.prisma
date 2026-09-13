@@ -1,34 +1,38 @@
 // use prisma-next
 model User {
-  id              Int               @id @default(autoincrement())
-  email           String            @unique
+  id              Int                 @id @default(autoincrement())
+  email           String              @unique
   password        String
   name            String
-  role            String            @default("buyer") // "buyer" or "seller"
+  role            String              @default("buyer") // "buyer" or "seller"
   demands         Demand[]
   bids            Bid[]
-  ordersAsBuyer   Order[]           @relation("OrderBuyer")
-  ordersAsSeller  Order[]           @relation("OrderSeller")
-  reviewsGiven    Review[]          @relation("ReviewsGiven")
-  reviewsReceived Review[]          @relation("ReviewsReceived")
+  ordersAsBuyer   Order[]             @relation("OrderBuyer")
+  ordersAsSeller  Order[]             @relation("OrderSeller")
+  reviewsGiven    Review[]            @relation("ReviewsGiven")
+  reviewsReceived Review[]            @relation("ReviewsReceived")
   notifications   Notification[]
+  walletBalance   Int                 @default(0)
+  walletTxns      WalletTransaction[]
 
-  createdAt       TimestamptzString @default(now())
-  updatedAt       TimestamptzString @default(now())
+  createdAt       TimestamptzString   @default(now())
+  updatedAt       TimestamptzString   @default(now())
 }
 
 model Demand {
-  id          Int               @id @default(autoincrement())
-  title       String
-  description String?
-  budget      Int?
-  status      String            @default("open") // "open", "closed", "fulfilled"
-  buyer       User              @relation(fields:[buyerId], references:[id])
-  buyerId     Int
-  bids        Bid[]
-  orders      Order[]
-  createdAt   TimestamptzString @default(now())
-  updatedAt   TimestamptzString @default(now())
+  id               Int               @id @default(autoincrement())
+  title            String
+  description      String?
+  budget           Int?
+  status           String            @default("open") // "pending_payment", "open", "closed", "fulfilled"
+  bookingFeeAmount Int?
+  bookingFeePaid   Boolean           @default(false)
+  buyer            User              @relation(fields:[buyerId], references:[id])
+  buyerId          Int
+  bids             Bid[]
+  orders           Order[]
+  createdAt        TimestamptzString @default(now())
+  updatedAt        TimestamptzString @default(now())
 }
 
 model Bid {
@@ -80,6 +84,22 @@ model Notification {
   message   String
   type      String // "new_bid", "bid_accepted", "bid_rejected", "order_shipped", "order_delivered"
   isRead    Boolean           @default(false)
+  user      User              @relation(fields:[userId], references:[id])
+  userId    Int
+  createdAt TimestamptzString @default(now())
+}
+
+model PlatformSetting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model WalletTransaction {
+  id        Int               @id @default(autoincrement())
+  amount    Int
+  type      String // "credit" or "debit"
+  reason    String // "topup", "booking_fee", "booking_fee_refund", "order_payment", "admin_adjustment"
   user      User              @relation(fields:[userId], references:[id])
   userId    Int
   createdAt TimestamptzString @default(now())
