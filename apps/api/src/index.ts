@@ -214,6 +214,61 @@ app.post("/bids/:id/reject", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+app.post("/orders/:id/ship", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the seller for this order" });
+    }
+
+    if (order.status !== "confirmed") {
+      return res.status(400).json({ error: `Cannot ship an order with status "${order.status}"` });
+    }
+
+    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ status: "shipped" });
+
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/orders/:id/deliver", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the buyer for this order" });
+    }
+
+    if (order.status !== "shipped") {
+      return res.status(400).json({ error: `Cannot mark as delivered an order with status "${order.status}"` });
+    }
+
+    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ status: "delivered" });
+
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
+
