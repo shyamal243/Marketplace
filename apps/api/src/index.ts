@@ -2258,6 +2258,102 @@ app.get("/admin/earnings/platform", requireAuth, async (req: AuthRequest, res) =
   }
 });
 
+app.get("/admin/users", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access only" });
+    }
+
+    const { role } = req.query;
+    const filters: Record<string, unknown> = {};
+
+    if (role) {
+      filters.role = role;
+    }
+
+    const users = await db.orm.public.User.where(filters).all();
+    const usersWithoutPasswords = users.map(({ password, ...rest }) => rest);
+
+    res.status(200).json(usersWithoutPasswords);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/admin/orders", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access only" });
+    }
+
+    const { status } = req.query;
+    const filters: Record<string, unknown> = {};
+
+    if (status) {
+      filters.status = status;
+    }
+
+    const orders = await db.orm.public.Order.where(filters).all();
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/stores/:id/analytics", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const storeId = Number(req.params.id);
+
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    if (store.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this store" });
+    }
+
+    const orders = await db.orm.public.Order.where({ storeId }).all();
+    const products = await db.orm.public.Product.where({ storeId }).all();
+
+    const totalSales = orders
+      .filter((o) => o.status === "delivered")
+      .reduce((sum, o) => sum + o.amount, 0);
+
+    const orderItemsByProduct: Record<number, number> = {};
+
+    for (const order of orders) {
+      const items = await db.orm.public.OrderItem.where({ orderId: order.id }).all();
+      for (const item of items) {
+        orderItemsByProduct[item.productId] = (orderItemsByProduct[item.productId] ?? 0) + item.quantity;
+      }
+    }
+
+    const bestSelling = Object.entries(orderItemsByProduct)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([productId, quantitySold]) => {
+        const product = products.find((p) => p.id === Number(productId));
+        return { productId: Number(productId), name: product?.name ?? "Unknown", quantitySold };
+      });
+
+    res.status(200).json({
+      totalOrders: orders.length,
+      totalSales,
+      deliveredOrders: orders.filter((o) => o.status === "delivered").length,
+      cancelledOrders: orders.filter((o) => o.status === "cancelled").length,
+      totalProducts: products.length,
+      bestSellingProducts: bestSelling,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
