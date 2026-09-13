@@ -4,13 +4,14 @@ import { db } from "./prisma/db";
 import jwt from "jsonwebtoken";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import rateLimit from "express-rate-limit";
 
 interface AuthRequest extends express.Request {
   userId?: number;
   userRole?: string;
 }
 
-function requireAuth(req: AuthRequest, res: express.Response, next: express.NextFunction) {
+async function requireAuth(req: AuthRequest, res: express.Response, next: express.NextFunction) {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -19,14 +20,21 @@ function requireAuth(req: AuthRequest, res: express.Response, next: express.Next
 
   const token = authHeader.split(" ")[1];
 
-if (!token) {
-  return res.status(401).json({ error: "No token provided" });
-}
+  if (!token) {
+    return res.status(401).json({ error: "No token provided" });
+  }
 
   try {
+    const blocked = await db.orm.public.BlockedToken.where({ token }).first();
+
+    if (blocked) {
+      return res.status(401).json({ error: "This token has been logged out" });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number; role: string };
     req.userId = decoded.userId;
     req.userRole = decoded.role;
+    (req as AuthRequest & { token?: string }).token = token;
     next();
   } catch (error) {
     return res.status(401).json({ error: "Invalid or expired token" });
@@ -34,6 +42,13 @@ if (!token) {
 }
 
 const app = express();
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: "Too many login attempts. Please try again in 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
@@ -49,6 +64,16 @@ app.get("/", (req, res) => {
 app.post("/signup", async (req, res) => {
   try {
     const { email, password, name, role } = req.body;
+
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: "email, password, and name are required" });
+    }
+
+    const existingUser = await db.orm.public.User.where({ email }).first();
+
+    if (existingUser) {
+      return res.status(400).json({ error: "An account with this email already exists" });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -67,7 +92,7 @@ app.post("/signup", async (req, res) => {
   }
 });
 
-app.post("/login", async (req, res) => {
+app.post("/login", loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -98,9 +123,25 @@ app.post("/login", async (req, res) => {
   }
 });
 
+app.post("/logout", requireAuth, async (req: AuthRequest & { token?: string }, res) => {
+  try {
+    if (req.token) {
+      await db.orm.public.BlockedToken.create({ token: req.token });
+    }
+
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { title, description, budget, durationHours } = req.body;
+        if (budget !== undefined && budget !== null && (typeof budget !== "number" || budget <= 0)) {
+      return res.status(400).json({ error: "budget must be a positive number" });
+    }
 
     const allowedDurations = [1, 2, 3, 6, 12, 24];
 
@@ -316,6 +357,9 @@ app.get("/demands", async (req, res) => {
 app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { demandId, amount, message } = req.body;
+        if (typeof amount !== "number" || amount <= 0) {
+      return res.status(400).json({ error: "amount must be a positive number" });
+    }
 
     // STEP 1: Look up the demand FIRST (new)
     const targetDemand = await db.orm.public.Demand.where({ id: demandId }).first();
@@ -807,8 +851,17 @@ app.post("/orders/:id/pay", requireAuth, async (req: AuthRequest, res) => {
       return res.status(403).json({ error: "You are not the buyer for this order" });
     }
 
+    const demand = await db.orm.public.Demand.where({ id: order.demandId }).first();
+
+    const alreadyPaidFee = demand?.bookingFeePaid ? (demand.bookingFeeAmount ?? 0) : 0;
+    const amountDue = order.amount - alreadyPaidFee;
+
+    if (amountDue <= 0) {
+      return res.status(400).json({ error: "Nothing left to pay for this order" });
+    }
+
     const razorpayOrder = await razorpay.orders.create({
-      amount: order.amount * 100,
+      amount: amountDue * 100,
       currency: "INR",
       receipt: `order_${order.id}`,
     });
@@ -818,6 +871,7 @@ app.post("/orders/:id/pay", requireAuth, async (req: AuthRequest, res) => {
       amount: razorpayOrder.amount,
       currency: razorpayOrder.currency,
       keyId: process.env.RAZORPAY_KEY_ID,
+      amountDue,
     });
   } catch (error) {
     console.error(error);
@@ -894,6 +948,13 @@ app.post("/products", requireAuth, async (req: AuthRequest, res) => {
     }
 
     const { name, description, price, stock } = req.body;
+        if (typeof price !== "number" || price <= 0) {
+      return res.status(400).json({ error: "price must be a positive number" });
+    }
+
+    if (stock !== undefined && (typeof stock !== "number" || stock < 0)) {
+      return res.status(400).json({ error: "stock must be a non-negative number" });
+    }
 
     const product = await db.orm.public.Product.create({
       name,
@@ -1016,6 +1077,15 @@ app.get("/products/:id", async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
+});
+
+app.use((req, res) => {
+  res.status(404).json({ error: "Route not found" });
+});
+
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
 });
 
 app.listen(PORT, () => {

@@ -8,6 +8,10 @@
       "model": "Bid",
       "namespace": "public"
     },
+    "blockedToken": {
+      "model": "BlockedToken",
+      "namespace": "public"
+    },
     "demand": {
       "model": "Demand",
       "namespace": "public"
@@ -169,6 +173,47 @@
               },
               "namespaceId": "public",
               "table": "bid"
+            }
+          },
+          "BlockedToken": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "token": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "token": {
+                  "column": "token"
+                }
+              },
+              "namespaceId": "public",
+              "table": "blockedToken"
             }
           },
           "Demand": {
@@ -1470,6 +1515,47 @@
               },
               "uniques": []
             },
+            "blockedToken": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "token": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "token"
+                  ]
+                }
+              ]
+            },
             "demand": {
               "columns": {
                 "bidWindowExpiresAt": {
@@ -2386,7 +2472,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "9d3a158c1914fead4fe37e03bc07b6019f66d9852274cf157f3b135ff7b78c2e"
+    "storageHash": "d38abafa16c21ab5035a542eea24b45a79fe32051eea2fbda3bd3c016149a82f"
   },
   "capabilities": {
     "postgres": {

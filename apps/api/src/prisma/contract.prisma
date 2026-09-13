@@ -136,3 +136,9 @@ model ProductRating {
 
   @@unique([productId, customerId])
 }
+
+model BlockedToken {
+  id        Int               @id @default(autoincrement())
+  token     String            @unique
+  createdAt TimestamptzString @default(now())
+}
