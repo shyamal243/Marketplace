@@ -7,6 +7,7 @@ import crypto from "crypto";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 
+
 interface AuthRequest extends express.Request {
   userId?: number;
   userRole?: string;
@@ -144,6 +145,9 @@ app.post("/logout", requireAuth, async (req: AuthRequest & { token?: string }, r
 app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { title, description, budget, durationHours } = req.body;
+    if (req.userRole !== "buyer") {
+      return res.status(403).json({ error: "Only buyers can post demands" });
+    }
         if (budget !== undefined && budget !== null && (typeof budget !== "number" || budget <= 0)) {
       return res.status(400).json({ error: "budget must be a positive number" });
     }
@@ -362,6 +366,9 @@ app.get("/demands", async (req, res) => {
 app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { demandId, amount, message } = req.body;
+        if (req.userRole !== "seller") {
+      return res.status(403).json({ error: "Only sellers can submit bids" });
+    }
         if (typeof amount !== "number" || amount <= 0) {
       return res.status(400).json({ error: "amount must be a positive number" });
     }
@@ -377,7 +384,9 @@ app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
     if (targetDemand.bidWindowExpiresAt && new Date(targetDemand.bidWindowExpiresAt) < new Date()) {
       return res.status(400).json({ error: "The bidding window for this demand has closed" });
     }
-
+    if (targetDemand.status !== "open") {
+      return res.status(400).json({ error: `Cannot bid on a demand with status "${targetDemand.status}"` });
+    }
     // STEP 3: Only now do we create the bid (same as before)
     const bid = await db.orm.public.Bid.create({
       demandId,
@@ -404,13 +413,24 @@ app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-app.get("/demands/:id/bids", async (req, res) => {
+app.get("/demands/:id/bids", requireAuth, async (req: AuthRequest, res) => {
   try {
     const demandId = Number(req.params.id);
 
-    const bids = await db.orm.public.Bid.where({ demandId }).all();
+    const demand = await db.orm.public.Demand.where({ id: demandId }).first();
 
-    res.status(200).json(bids);
+    if (!demand) {
+      return res.status(404).json({ error: "Demand not found" });
+    }
+
+    const allBids = await db.orm.public.Bid.where({ demandId }).all();
+
+    if (demand.buyerId === req.userId) {
+      return res.status(200).json(allBids);
+    }
+
+    const ownBidOnly = allBids.filter((b) => b.sellerId === req.userId);
+    res.status(200).json(ownBidOnly);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
