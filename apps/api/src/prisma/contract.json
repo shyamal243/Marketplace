@@ -16,8 +16,20 @@
       "model": "DeliveryAssignment",
       "namespace": "public"
     },
+    "deliveryRating": {
+      "model": "DeliveryRating",
+      "namespace": "public"
+    },
+    "deliveryTip": {
+      "model": "DeliveryTip",
+      "namespace": "public"
+    },
     "demand": {
       "model": "Demand",
+      "namespace": "public"
+    },
+    "gstRate": {
+      "model": "GstRate",
       "namespace": "public"
     },
     "notification": {
@@ -307,6 +319,36 @@
                   "model": "Order",
                   "namespace": "public"
                 }
+              },
+              "rating": {
+                "cardinality": "1:1",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "deliveryAssignmentId"
+                  ]
+                },
+                "to": {
+                  "model": "DeliveryRating",
+                  "namespace": "public"
+                }
+              },
+              "tip": {
+                "cardinality": "1:1",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "deliveryAssignmentId"
+                  ]
+                },
+                "to": {
+                  "model": "DeliveryTip",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -332,6 +374,225 @@
               },
               "namespaceId": "public",
               "table": "deliveryAssignment"
+            }
+          },
+          "DeliveryRating": {
+            "fields": {
+              "comment": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "customerId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "deliveryAssignmentId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "rating": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "customer": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "customerId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "deliveryAssignment": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "deliveryAssignmentId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "DeliveryAssignment",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "comment": {
+                  "column": "comment"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "customerId": {
+                  "column": "customerId"
+                },
+                "deliveryAssignmentId": {
+                  "column": "deliveryAssignmentId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "rating": {
+                  "column": "rating"
+                }
+              },
+              "namespaceId": "public",
+              "table": "deliveryRating"
+            }
+          },
+          "DeliveryTip": {
+            "fields": {
+              "amount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "customerId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "deliveryAssignmentId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "deliveryPersonId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "customer": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "customerId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "deliveryAssignment": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "deliveryAssignmentId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "DeliveryAssignment",
+                  "namespace": "public"
+                }
+              },
+              "deliveryPerson": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "deliveryPersonId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "amount": {
+                  "column": "amount"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "customerId": {
+                  "column": "customerId"
+                },
+                "deliveryAssignmentId": {
+                  "column": "deliveryAssignmentId"
+                },
+                "deliveryPersonId": {
+                  "column": "deliveryPersonId"
+                },
+                "id": {
+                  "column": "id"
+                }
+              },
+              "namespaceId": "public",
+              "table": "deliveryTip"
             }
           },
           "Demand": {
@@ -368,6 +629,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "category": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -478,6 +746,9 @@
                 "buyerId": {
                   "column": "buyerId"
                 },
+                "category": {
+                  "column": "category"
+                },
                 "createdAt": {
                   "column": "createdAt"
                 },
@@ -499,6 +770,47 @@
               },
               "namespaceId": "public",
               "table": "demand"
+            }
+          },
+          "GstRate": {
+            "fields": {
+              "category": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "ratePercent": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "category": {
+                  "column": "category"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "ratePercent": {
+                  "column": "ratePercent"
+                }
+              },
+              "namespaceId": "public",
+              "table": "gstRate"
             }
           },
           "Notification": {
@@ -634,6 +946,27 @@
               },
               "demandId": {
                 "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "gstAmount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "gstCategory": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "gstRatePercent": {
+                "nullable": true,
                 "type": {
                   "codecId": "pg/int4@1",
                   "kind": "scalar"
@@ -811,6 +1144,15 @@
                 },
                 "demandId": {
                   "column": "demandId"
+                },
+                "gstAmount": {
+                  "column": "gstAmount"
+                },
+                "gstCategory": {
+                  "column": "gstCategory"
+                },
+                "gstRatePercent": {
+                  "column": "gstRatePercent"
                 },
                 "id": {
                   "column": "id"
@@ -1577,6 +1919,21 @@
                   "namespace": "public"
                 }
               },
+              "deliveryRatingsGiven": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "customerId"
+                  ]
+                },
+                "to": {
+                  "model": "DeliveryRating",
+                  "namespace": "public"
+                }
+              },
               "demands": {
                 "cardinality": "1:N",
                 "on": {
@@ -1724,6 +2081,36 @@
                 },
                 "to": {
                   "model": "Review",
+                  "namespace": "public"
+                }
+              },
+              "tipsGiven": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "customerId"
+                  ]
+                },
+                "to": {
+                  "model": "DeliveryTip",
+                  "namespace": "public"
+                }
+              },
+              "tipsReceived": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "deliveryPersonId"
+                  ]
+                },
+                "to": {
+                  "model": "DeliveryTip",
                   "namespace": "public"
                 }
               },
@@ -2135,6 +2522,226 @@
                 }
               ]
             },
+            "deliveryRating": {
+              "columns": {
+                "comment": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "customerId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "deliveryAssignmentId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "rating": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "deliveryAssignmentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "deliveryRating"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "deliveryAssignment"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "customerId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "deliveryRating"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "customerId"
+                  ],
+                  "name": "deliveryRating_customerId_idx_b2a8a46c",
+                  "prefix": "deliveryRating_customerId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "deliveryAssignmentId"
+                  ]
+                }
+              ]
+            },
+            "deliveryTip": {
+              "columns": {
+                "amount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "customerId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "deliveryAssignmentId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "deliveryPersonId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "deliveryAssignmentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "deliveryTip"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "deliveryAssignment"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "customerId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "deliveryTip"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "deliveryPersonId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "deliveryTip"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "customerId"
+                  ],
+                  "name": "deliveryTip_customerId_idx_b2a8a46c",
+                  "prefix": "deliveryTip_customerId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "deliveryPersonId"
+                  ],
+                  "name": "deliveryTip_deliveryPersonId_idx_02b8a2c8",
+                  "prefix": "deliveryTip_deliveryPersonId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "deliveryAssignmentId"
+                  ]
+                }
+              ]
+            },
             "demand": {
               "columns": {
                 "bidWindowExpiresAt": {
@@ -2165,6 +2772,11 @@
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
                   "nullable": false
+                },
+                "category": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
@@ -2247,6 +2859,43 @@
                 ]
               },
               "uniques": []
+            },
+            "gstRate": {
+              "columns": {
+                "category": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "ratePercent": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "category"
+                  ]
+                }
+              ]
             },
             "notification": {
               "columns": {
@@ -2368,6 +3017,21 @@
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
                   "nullable": false
+                },
+                "gstAmount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "gstCategory": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "gstRatePercent": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
                 },
                 "id": {
                   "codecId": "pg/int4@1",
@@ -3313,7 +3977,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "5970733cd957f197dee0d032bc1624b27c5cf2ffce37be2d841c8891ae26fc88"
+    "storageHash": "54355b4ee622a1b0a99c7d4b20b67946dfbbd422c1cdc7cdfbb5a6a2e0527267"
   },
   "capabilities": {
     "postgres": {

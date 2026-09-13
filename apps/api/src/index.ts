@@ -496,6 +496,13 @@ app.post("/bids/:id/accept", requireAuth, async (req: AuthRequest, res) => {
       return res.status(403).json({ error: "You do not own this demand" });
     }
 
+    const gstRate = demand.category
+      ? await db.orm.public.GstRate.where({ category: demand.category }).first()
+      : null;
+
+    const ratePercent = gstRate?.ratePercent ?? 0;
+    const gstAmount = Math.round((bid.amount * ratePercent) / (100 + ratePercent));
+
     const order = await db.transaction(async (tx) => {
       const newOrder = await tx.orm.public.Order.create({
         demandId: demand.id,
@@ -503,6 +510,9 @@ app.post("/bids/:id/accept", requireAuth, async (req: AuthRequest, res) => {
         buyerId: demand.buyerId,
         sellerId: bid.sellerId,
         amount: bid.amount,
+        gstCategory: demand.category ?? null,
+        gstRatePercent: ratePercent,
+        gstAmount,
       });
 
       await tx.orm.public.Bid.where({ id: bid.id }).update({ status: "accepted" });
@@ -844,6 +854,144 @@ app.post("/returns/:id/decide", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+app.post("/deliveries/:orderId/rate", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.orderId);
+    const { rating, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: "Rating must be between 1 and 5" });
+    }
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the buyer for this order" });
+    }
+
+    const assignment = await db.orm.public.DeliveryAssignment.where({ orderId }).first();
+
+    if (!assignment) {
+      return res.status(404).json({ error: "No delivery assignment found for this order" });
+    }
+
+    if (assignment.status !== "delivered") {
+      return res.status(400).json({ error: "Can only rate a completed delivery" });
+    }
+
+    const existing = await db.orm.public.DeliveryRating.where({ deliveryAssignmentId: assignment.id }).first();
+
+    if (existing) {
+      return res.status(400).json({ error: "You have already rated this delivery" });
+    }
+
+    const deliveryRating = await db.orm.public.DeliveryRating.create({
+      rating,
+      comment,
+      deliveryAssignmentId: assignment.id,
+      customerId: req.userId!,
+    });
+
+    res.status(201).json(deliveryRating);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/deliveries/:orderId/tip", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.orderId);
+    const { amount } = req.body;
+
+    if (typeof amount !== "number" || amount <= 0) {
+      return res.status(400).json({ error: "amount must be a positive number" });
+    }
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the buyer for this order" });
+    }
+
+    const assignment = await db.orm.public.DeliveryAssignment.where({ orderId }).first();
+
+    if (!assignment) {
+      return res.status(404).json({ error: "No delivery assignment found for this order" });
+    }
+
+    if (assignment.status !== "delivered") {
+      return res.status(400).json({ error: "Can only tip after delivery is completed" });
+    }
+
+    const existing = await db.orm.public.DeliveryTip.where({ deliveryAssignmentId: assignment.id }).first();
+
+    if (existing) {
+      return res.status(400).json({ error: "You have already tipped this delivery" });
+    }
+
+    const buyer = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!buyer || buyer.walletBalance < amount) {
+      return res.status(400).json({ error: "Insufficient wallet balance for this tip" });
+    }
+
+    const tip = await db.transaction(async (tx) => {
+      await tx.orm.public.User.where({ id: buyer.id }).update({
+        walletBalance: buyer.walletBalance - amount,
+      });
+
+      await tx.orm.public.WalletTransaction.create({
+        amount,
+        type: "debit",
+        reason: "delivery_tip",
+        userId: buyer.id,
+      });
+
+      const deliveryPerson = await tx.orm.public.User.where({ id: assignment.deliveryPersonId }).first();
+
+      if (deliveryPerson) {
+        await tx.orm.public.User.where({ id: deliveryPerson.id }).update({
+          walletBalance: deliveryPerson.walletBalance + amount,
+        });
+
+        await tx.orm.public.WalletTransaction.create({
+          amount,
+          type: "credit",
+          reason: "delivery_tip",
+          userId: deliveryPerson.id,
+        });
+      }
+
+      return tx.orm.public.DeliveryTip.create({
+        amount,
+        deliveryAssignmentId: assignment.id,
+        customerId: buyer.id,
+        deliveryPersonId: assignment.deliveryPersonId,
+      });
+    });
+
+    await db.orm.public.Notification.create({
+      message: `You received a ₹${amount} tip for a delivery!`,
+      type: "tip_received",
+      userId: assignment.deliveryPersonId,
+    });
+
+    res.status(201).json(tip);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/orders/:id/deliver", requireAuth, async (req: AuthRequest, res) => {
   try {
     const orderId = Number(req.params.id);
@@ -1177,6 +1325,43 @@ app.post("/admin/wallet/adjust", requireAuth, async (req: AuthRequest, res) => {
     });
 
     res.status(200).json({ newBalance, transaction });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/admin/gst-rates", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access only" });
+    }
+
+    const { category, ratePercent } = req.body;
+
+    if (!category || typeof ratePercent !== "number" || ratePercent < 0) {
+      return res.status(400).json({ error: "category and a non-negative ratePercent are required" });
+    }
+
+    const existing = await db.orm.public.GstRate.where({ category }).first();
+
+    if (existing) {
+      const updated = await db.orm.public.GstRate.where({ id: existing.id }).update({ ratePercent });
+      return res.status(200).json(updated);
+    }
+
+    const gstRate = await db.orm.public.GstRate.create({ category, ratePercent });
+    res.status(201).json(gstRate);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/gst-rates", async (req, res) => {
+  try {
+    const rates = await db.orm.public.GstRate.where({}).all();
+    res.status(200).json(rates);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });

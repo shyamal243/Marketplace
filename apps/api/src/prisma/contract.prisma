@@ -1,32 +1,36 @@
 // use prisma-next
 model User {
-  id                  Int                  @id @default(autoincrement())
-  email               String               @unique
-  password            String
-  name                String
-  role                String               @default("buyer") // "buyer", "seller", "admin", "delivery"
-  demands             Demand[]
-  bids                Bid[]
-  ordersAsBuyer       Order[]              @relation("OrderBuyer")
-  ordersAsSeller      Order[]              @relation("OrderSeller")
-  reviewsGiven        Review[]             @relation("ReviewsGiven")
-  reviewsReceived     Review[]             @relation("ReviewsReceived")
-  notifications       Notification[]
-  walletBalance       Int                  @default(0)
-  walletTxns          WalletTransaction[]
-  products            Product[]
-  productRatings      ProductRating[]
-  passwordResets      PasswordResetToken[]
-  deliveryAssignments DeliveryAssignment[]
-  returnRequests      ReturnRequest[]
+  id                   Int                  @id @default(autoincrement())
+  email                String               @unique
+  password             String
+  name                 String
+  role                 String               @default("buyer") // "buyer", "seller", "admin", "delivery"
+  demands              Demand[]
+  bids                 Bid[]
+  ordersAsBuyer        Order[]              @relation("OrderBuyer")
+  ordersAsSeller       Order[]              @relation("OrderSeller")
+  reviewsGiven         Review[]             @relation("ReviewsGiven")
+  reviewsReceived      Review[]             @relation("ReviewsReceived")
+  notifications        Notification[]
+  walletBalance        Int                  @default(0)
+  walletTxns           WalletTransaction[]
+  products             Product[]
+  productRatings       ProductRating[]
+  passwordResets       PasswordResetToken[]
+  deliveryAssignments  DeliveryAssignment[]
+  returnRequests       ReturnRequest[]
+  deliveryRatingsGiven DeliveryRating[]
+  tipsGiven            DeliveryTip[]        @relation("TipsGiven")
+  tipsReceived         DeliveryTip[]        @relation("TipsReceived")
 
-  createdAt           TimestamptzString    @default(now())
-  updatedAt           TimestamptzString    @default(now())
+  createdAt            TimestamptzString    @default(now())
+  updatedAt            TimestamptzString    @default(now())
 }
 
 model Demand {
   id                 Int                @id @default(autoincrement())
   title              String
+  category           String?
   description        String?
   budget             Int?
   status             String             @default("open") // "pending_payment", "open", "closed", "fulfilled"
@@ -70,6 +74,9 @@ model Order {
   deliveryMode       String? // "local" or "courier"
   trackingNumber     String?
   courierName        String?
+  gstCategory        String?
+  gstRatePercent     Int?
+  gstAmount          Int?
   deliveryAssignment DeliveryAssignment?
   returnRequest      ReturnRequest?
   review             Review[]
@@ -175,6 +182,8 @@ model DeliveryAssignment {
   deliveryPerson   User              @relation(fields:[deliveryPersonId], references:[id])
   deliveryPersonId Int
   status           String            @default("assigned") // "assigned", "picked_up", "out_for_delivery", "delivered"
+  rating           DeliveryRating?
+  tip              DeliveryTip?
   createdAt        TimestamptzString @default(now())
   updatedAt        TimestamptzString @default(now())
 }
@@ -189,4 +198,33 @@ model ReturnRequest {
   requestedById Int
   createdAt     TimestamptzString @default(now())
   updatedAt     TimestamptzString @default(now())
+}
+
+model GstRate {
+  id          Int    @id @default(autoincrement())
+  category    String @unique
+  ratePercent Int
+}
+
+model DeliveryRating {
+  id                   Int                @id @default(autoincrement())
+  rating               Int
+  comment              String?
+  deliveryAssignment   DeliveryAssignment @relation(fields:[deliveryAssignmentId], references:[id])
+  deliveryAssignmentId Int                @unique
+  customer             User               @relation(fields:[customerId], references:[id])
+  customerId           Int
+  createdAt            TimestamptzString  @default(now())
+}
+
+model DeliveryTip {
+  id                   Int                @id @default(autoincrement())
+  amount               Int
+  deliveryAssignment   DeliveryAssignment @relation(fields:[deliveryAssignmentId], references:[id])
+  deliveryAssignmentId Int                @unique
+  customer             User               @relation("TipsGiven", fields:[customerId], references:[id])
+  customerId           Int
+  deliveryPerson       User               @relation("TipsReceived", fields:[deliveryPersonId], references:[id])
+  deliveryPersonId     Int
+  createdAt            TimestamptzString  @default(now())
 }
