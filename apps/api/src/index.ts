@@ -52,6 +52,7 @@ for (const key of requiredEnvVars) {
   }
 }
 const app = express();
+app.set("trust proxy", 1);
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -70,10 +71,13 @@ app.use(cors({
   credentials: true,
 }));
 app.use(helmet());
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 
 app.get("/", (req, res) => {
   res.send("Hello World from the backend!");
+});
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 app.post("/signup", async (req, res) => {
@@ -232,23 +236,27 @@ app.post("/demands/:id/pay-fee", requireAuth, async (req: AuthRequest, res) => {
         return res.status(400).json({ error: "Insufficient wallet balance" });
       }
 
-      await db.orm.public.User.where({ id: user.id }).update({
-        walletBalance: user.walletBalance - feeAmount,
-      });
+      const updatedDemand = await db.transaction(async (tx) => {
+        await tx.orm.public.User.where({ id: user.id }).update({
+          walletBalance: user.walletBalance - feeAmount,
+        });
 
-      await db.orm.public.WalletTransaction.create({
-        amount: feeAmount,
-        type: "debit",
-        reason: "booking_fee",
-        userId: user.id,
-      });
+        await tx.orm.public.WalletTransaction.create({
+          amount: feeAmount,
+          type: "debit",
+          reason: "booking_fee",
+          userId: user.id,
+        });
 
-      const updatedDemand = await db.orm.public.Demand.where({ id: demand.id }).update({
-        status: "open",
-        bookingFeePaid: true,
+        return tx.orm.public.Demand.where({ id: demand.id }).update({
+          status: "open",
+          bookingFeePaid: true,
+        });
       });
 
       return res.status(200).json(updatedDemand);
+
+
     }
 
     if (method === "razorpay") {
@@ -639,15 +647,17 @@ app.post("/orders/:id/cancel", requireAuth, async (req: AuthRequest, res) => {
       const buyer = await db.orm.public.User.where({ id: order.buyerId }).first();
 
       if (buyer) {
-        await db.orm.public.User.where({ id: buyer.id }).update({
-          walletBalance: buyer.walletBalance + order.amount,
-        });
+        await db.transaction(async (tx) => {
+          await tx.orm.public.User.where({ id: buyer.id }).update({
+            walletBalance: buyer.walletBalance + order.amount,
+          });
 
-        await db.orm.public.WalletTransaction.create({
-          amount: order.amount,
-          type: "credit",
-          reason: "order_cancelled_refund",
-          userId: buyer.id,
+          await tx.orm.public.WalletTransaction.create({
+            amount: order.amount,
+            type: "credit",
+            reason: "order_cancelled_refund",
+            userId: buyer.id,
+          });
         });
       }
     }
@@ -899,13 +909,15 @@ app.post("/admin/wallet/adjust", requireAuth, async (req: AuthRequest, res) => {
 
     const newBalance = type === "credit" ? user.walletBalance + amount : user.walletBalance - amount;
 
-    await db.orm.public.User.where({ id: user.id }).update({ walletBalance: newBalance });
+    const transaction = await db.transaction(async (tx) => {
+      await tx.orm.public.User.where({ id: user.id }).update({ walletBalance: newBalance });
 
-    const transaction = await db.orm.public.WalletTransaction.create({
-      amount,
-      type,
-      reason: reason ?? "admin_adjustment",
-      userId: user.id,
+      return tx.orm.public.WalletTransaction.create({
+        amount,
+        type,
+        reason: reason ?? "admin_adjustment",
+        userId: user.id,
+      });
     });
 
     await db.orm.public.Notification.create({
@@ -974,18 +986,24 @@ app.post("/wallet/verify-topup", requireAuth, async (req: AuthRequest, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    await db.orm.public.User.where({ id: user.id }).update({
-      walletBalance: user.walletBalance + amount,
+    const newBalance = await db.transaction(async (tx) => {
+      await tx.orm.public.User.where({ id: user.id }).update({
+        walletBalance: user.walletBalance + amount,
+      });
+
+      await tx.orm.public.WalletTransaction.create({
+        amount,
+        type: "credit",
+        reason: "topup",
+        userId: user.id,
+      });
+
+      return user.walletBalance + amount;
     });
 
-    await db.orm.public.WalletTransaction.create({
-      amount,
-      type: "credit",
-      reason: "topup",
-      userId: user.id,
-    });
+    res.status(200).json({ newBalance });
 
-    res.status(200).json({ newBalance: user.walletBalance + amount });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
