@@ -227,6 +227,54 @@ app.post("/demands/:id/verify-fee-payment", requireAuth, async (req: AuthRequest
   }
 });
 
+app.post("/demands/:id/cancel", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const demandId = Number(req.params.id);
+
+    const demand = await db.orm.public.Demand.where({ id: demandId }).first();
+
+    if (!demand) {
+      return res.status(404).json({ error: "Demand not found" });
+    }
+
+    if (demand.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this demand" });
+    }
+
+    if (demand.status !== "open") {
+      return res.status(400).json({ error: `Cannot cancel a demand with status "${demand.status}"` });
+    }
+
+    const bids = await db.orm.public.Bid.where({ demandId: demand.id }).all();
+
+    if (bids.length > 0) {
+      return res.status(400).json({ error: "Cannot cancel a demand that has received bids" });
+    }
+
+    const user = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (user && demand.bookingFeePaid && demand.bookingFeeAmount) {
+      await db.orm.public.User.where({ id: user.id }).update({
+        walletBalance: user.walletBalance + demand.bookingFeeAmount,
+      });
+
+      await db.orm.public.WalletTransaction.create({
+        amount: demand.bookingFeeAmount,
+        type: "credit",
+        reason: "booking_fee_refund",
+        userId: user.id,
+      });
+    }
+
+    const updatedDemand = await db.orm.public.Demand.where({ id: demand.id }).update({ status: "closed" });
+
+    res.status(200).json(updatedDemand);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.get("/demands", async (req, res) => {
   try {
     const { status, maxBudget, search } = req.query;
@@ -366,6 +414,15 @@ app.post("/bids/:id/reject", requireAuth, async (req: AuthRequest, res) => {
       type: "bid_rejected",
       userId: bid.sellerId,
     });
+
+    const remainingPendingBids = await db.orm.public.Bid.where({
+      demandId: demand.id,
+      status: "pending",
+    }).all();
+
+    if (remainingPendingBids.length === 0) {
+      await db.orm.public.Demand.where({ id: demand.id }).update({ status: "closed" });
+    }
 
     res.status(200).json(updatedBid);
   } catch (error) {
