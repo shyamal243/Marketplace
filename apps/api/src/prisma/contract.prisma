@@ -4,6 +4,8 @@ model User {
   email                String               @unique
   password             String
   name                 String
+  phone                String?
+  address              String?
   role                 String               @default("buyer") // "buyer", "seller", "admin", "delivery", "worker"
   demands              Demand[]
   bids                 Bid[]
