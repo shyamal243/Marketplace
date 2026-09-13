@@ -88,18 +88,29 @@ app.post("/login", async (req, res) => {
   }
 });
 
-app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
+app.get("/demands", async (req, res) => {
   try {
-    const { title, description, budget } = req.body;
+    const { status, maxBudget, search } = req.query;
 
-    const demand = await db.orm.public.Demand.create({
-      title,
-      description,
-      budget,
-      buyerId: req.userId!,
-    });
+    const filters: Record<string, unknown> = {};
 
-    res.status(201).json(demand);
+    if (status) {
+      filters.status = status;
+    }
+
+    let demands = await db.orm.public.Demand.where(filters).all();
+
+    if (maxBudget) {
+      const max = Number(maxBudget);
+      demands = demands.filter((d) => d.budget !== null && d.budget <= max);
+    }
+
+    if (search) {
+      const term = String(search).toLowerCase();
+      demands = demands.filter((d) => d.title.toLowerCase().includes(term));
+    }
+
+    res.status(200).json(demands);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
