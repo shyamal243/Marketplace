@@ -7,6 +7,8 @@ import crypto from "crypto";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 import helmet from "helmet";
+import multer from "multer";
+import path from "path";
 
 
 interface AuthRequest extends express.Request {
@@ -53,6 +55,16 @@ for (const key of requiredEnvVars) {
 }
 const app = express();
 app.set("trust proxy", 1);
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: "uploads/",
+    filename: (req, file, cb) => {
+      const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
+      cb(null, uniqueName);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
@@ -72,6 +84,7 @@ app.use(cors({
 }));
 app.use(helmet());
 app.use(express.json({ limit: "1mb" }));
+app.use("/uploads", express.static("uploads"));
 
 app.get("/", (req, res) => {
   res.send("Hello World from the backend!");
@@ -1571,6 +1584,115 @@ app.post("/notifications/:id/read", requireAuth, async (req: AuthRequest, res) =
     const updated = await db.orm.public.Notification.where({ id: notificationId }).update({ isRead: true });
 
     res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/kyc/upload", requireAuth, upload.single("document"), async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "seller" && req.userRole !== "delivery") {
+      return res.status(403).json({ error: "KYC is only required for sellers and delivery persons" });
+    }
+
+    const { documentType, documentNumber } = req.body;
+
+    if (!documentType) {
+      return res.status(400).json({ error: "documentType is required" });
+    }
+
+    const fileUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const doc = await db.transaction(async (tx) => {
+      const kycDoc = await tx.orm.public.KycDocument.create({
+        documentType,
+        documentNumber,
+        fileUrl,
+        userId: req.userId!,
+      });
+
+      await tx.orm.public.User.where({ id: req.userId! }).update({ kycStatus: "pending" });
+
+      return kycDoc;
+    });
+
+    res.status(201).json(doc);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/kyc/mine", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const docs = await db.orm.public.KycDocument.where({ userId: req.userId! }).all();
+    const user = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    res.status(200).json({ kycStatus: user?.kycStatus, documents: docs });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/admin/kyc/pending", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access only" });
+    }
+
+    const docs = await db.orm.public.KycDocument.where({ status: "pending" }).all();
+    res.status(200).json(docs);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/admin/kyc/:id/decide", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access only" });
+    }
+
+    const docId = Number(req.params.id);
+    const { decision, rejectionReason } = req.body;
+
+    if (decision !== "approved" && decision !== "rejected") {
+      return res.status(400).json({ error: "decision must be 'approved' or 'rejected'" });
+    }
+
+    const doc = await db.orm.public.KycDocument.where({ id: docId }).first();
+
+    if (!doc) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    const updatedDoc = await db.transaction(async (tx) => {
+      const updated = await tx.orm.public.KycDocument.where({ id: docId }).update({
+        status: decision,
+        rejectionReason: decision === "rejected" ? rejectionReason ?? null : null,
+      });
+
+      const allDocs = await tx.orm.public.KycDocument.where({ userId: doc.userId }).all();
+      const allApproved = allDocs.every((d) => d.id === docId ? decision === "approved" : d.status === "approved");
+      const anyRejected = allDocs.some((d) => d.id === docId ? decision === "rejected" : d.status === "rejected");
+
+      const overallStatus = anyRejected ? "rejected" : allApproved ? "approved" : "pending";
+
+      await tx.orm.public.User.where({ id: doc.userId }).update({ kycStatus: overallStatus });
+
+      return updated;
+    });
+
+    await db.orm.public.Notification.create({
+      message: `Your KYC document (${doc.documentType}) was ${decision}${rejectionReason ? `: ${rejectionReason}` : ""}`,
+      type: "kyc_decision",
+      userId: doc.userId,
+    });
+
+    res.status(200).json(updatedDoc);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });

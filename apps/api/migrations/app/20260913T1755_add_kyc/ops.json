@@ -1,0 +1,164 @@
+[
+  {
+    "id": "table.kycDocument",
+    "label": "Create table \"kycDocument\"",
+    "summary": "Creates table \"kycDocument\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "kycDocument"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"kycDocument\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"kycDocument\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"kycDocument\"",
+        "sql": "CREATE TABLE \"public\".\"kycDocument\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"documentNumber\" text,\n  \"documentType\" text NOT NULL,\n  \"fileUrl\" text,\n  \"id\" SERIAL NOT NULL,\n  \"rejectionReason\" text,\n  \"status\" text DEFAULT 'pending' NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"userId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"kycDocument\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"kycDocument\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.user.kycStatus",
+    "label": "Add column \"kycStatus\" to \"user\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "kycStatus",
+        "table": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"kycStatus\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "kycStatus"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"kycStatus\"",
+        "sql": "ALTER TABLE \"public\".\"user\" ADD COLUMN \"kycStatus\" text DEFAULT 'not_submitted' NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"kycStatus\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "kycStatus"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.kycDocument.kycDocument_userId_idx_a489d58a",
+    "label": "Create index \"kycDocument_userId_idx_a489d58a\" on \"kycDocument\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "kycDocument_userId_idx_a489d58a",
+        "table": "kycDocument"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"kycDocument_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"kycDocument_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"kycDocument_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"kycDocument_userId_idx_a489d58a\" ON \"public\".\"kycDocument\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"kycDocument_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"kycDocument_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.kycDocument.kycDocument_userId_fkey",
+    "label": "Add foreign key \"kycDocument_userId_fkey\" on \"kycDocument\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "kycDocument_userId_fkey",
+        "table": "kycDocument"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"kycDocument_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "kycDocument_userId_fkey",
+          "public",
+          "\"public\".\"kycDocument\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"kycDocument_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"kycDocument\"\nADD CONSTRAINT \"kycDocument_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"kycDocument_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "kycDocument_userId_fkey",
+          "public",
+          "\"public\".\"kycDocument\""
+        ]
+      }
+    ]
+  }
+]
