@@ -2,6 +2,7 @@ import express from "express";
 import bcrypt from "bcrypt";
 import { db } from "./prisma/db";
 import jwt from "jsonwebtoken";
+import Razorpay from "razorpay";
 
 interface AuthRequest extends express.Request {
   userId?: number;
@@ -28,6 +29,10 @@ function requireAuth(req: AuthRequest, res: express.Response, next: express.Next
 }
 
 const app = express();
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID!,
+  key_secret: process.env.RAZORPAY_KEY_SECRET!,
+});
 const PORT = 4000;
 
 app.use(express.json());
@@ -393,6 +398,38 @@ app.get("/users/:id/profile", async (req, res) => {
       averageRating,
       totalReviews: reviews.length,
       completedOrders: completedOrders.length,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/orders/:id/pay", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the buyer for this order" });
+    }
+
+    const razorpayOrder = await razorpay.orders.create({
+      amount: order.amount * 100,
+      currency: "INR",
+      receipt: `order_${order.id}`,
+    });
+
+    res.status(200).json({
+      razorpayOrderId: razorpayOrder.id,
+      amount: razorpayOrder.amount,
+      currency: razorpayOrder.currency,
+      keyId: process.env.RAZORPAY_KEY_ID,
     });
   } catch (error) {
     console.error(error);
