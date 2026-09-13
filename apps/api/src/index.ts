@@ -488,16 +488,21 @@ app.post("/bids/:id/accept", requireAuth, async (req: AuthRequest, res) => {
       return res.status(403).json({ error: "You do not own this demand" });
     }
 
-    const order = await db.orm.public.Order.create({
-      demandId: demand.id,
-      bidId: bid.id,
-      buyerId: demand.buyerId,
-      sellerId: bid.sellerId,
-      amount: bid.amount,
+    const order = await db.transaction(async (tx) => {
+      const newOrder = await tx.orm.public.Order.create({
+        demandId: demand.id,
+        bidId: bid.id,
+        buyerId: demand.buyerId,
+        sellerId: bid.sellerId,
+        amount: bid.amount,
+      });
+
+      await tx.orm.public.Bid.where({ id: bid.id }).update({ status: "accepted" });
+      await tx.orm.public.Demand.where({ id: demand.id }).update({ status: "fulfilled" });
+
+      return newOrder;
     });
 
-    await db.orm.public.Bid.where({ id: bid.id }).update({ status: "accepted" });
-    await db.orm.public.Demand.where({ id: demand.id }).update({ status: "fulfilled" });
     await db.orm.public.Notification.create({
       message: `Your bid of ₹${bid.amount} on "${demand.title}" was accepted!`,
       type: "bid_accepted",
