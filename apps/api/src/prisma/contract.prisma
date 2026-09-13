@@ -83,6 +83,8 @@ model Order {
   gstCategory        String?
   gstRatePercent     Int?
   gstAmount          Int?
+  commissionAmount   Int?
+  deliveryFeeAmount  Int?
   deliveryAssignment DeliveryAssignment?
   returnRequest      ReturnRequest?
   review             Review[]
@@ -274,4 +276,13 @@ model KycDocument {
   userId          Int
   createdAt       TimestamptzString @default(now())
   updatedAt       TimestamptzString @default(now())
+}
+
+model PlatformEarning {
+  id        Int               @id @default(autoincrement())
+  type      String // "commission", "booking_fee_forfeit"
+  amount    Int
+  orderId   Int?
+  demandId  Int?
+  createdAt TimestamptzString @default(now())
 }

@@ -52,6 +52,10 @@
       "model": "PasswordResetToken",
       "namespace": "public"
     },
+    "platformEarning": {
+      "model": "PlatformEarning",
+      "namespace": "public"
+    },
     "platformSetting": {
       "model": "PlatformSetting",
       "namespace": "public"
@@ -1052,6 +1056,13 @@
                   "kind": "scalar"
                 }
               },
+              "commissionAmount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "courierName": {
                 "nullable": true,
                 "type": {
@@ -1063,6 +1074,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "deliveryFeeAmount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
                   "kind": "scalar"
                 }
               },
@@ -1306,11 +1324,17 @@
                 "buyerId": {
                   "column": "buyerId"
                 },
+                "commissionAmount": {
+                  "column": "commissionAmount"
+                },
                 "courierName": {
                   "column": "courierName"
                 },
                 "createdAt": {
                   "column": "createdAt"
+                },
+                "deliveryFeeAmount": {
+                  "column": "deliveryFeeAmount"
                 },
                 "deliveryMode": {
                   "column": "deliveryMode"
@@ -1533,6 +1557,77 @@
               },
               "namespaceId": "public",
               "table": "passwordResetToken"
+            }
+          },
+          "PlatformEarning": {
+            "fields": {
+              "amount": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "demandId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "orderId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "type": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "amount": {
+                  "column": "amount"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "demandId": {
+                  "column": "demandId"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "orderId": {
+                  "column": "orderId"
+                },
+                "type": {
+                  "column": "type"
+                }
+              },
+              "namespaceId": "public",
+              "table": "platformEarning"
             }
           },
           "PlatformSetting": {
@@ -3571,6 +3666,11 @@
                   "nativeType": "int4",
                   "nullable": false
                 },
+                "commissionAmount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
                 "courierName": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -3584,6 +3684,11 @@
                   },
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "deliveryFeeAmount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
                 },
                 "deliveryMode": {
                   "codecId": "pg/text@1",
@@ -3978,6 +4083,56 @@
                   ]
                 }
               ]
+            },
+            "platformEarning": {
+              "columns": {
+                "amount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "demandId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "orderId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "type": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             },
             "platformSetting": {
               "columns": {
@@ -4809,7 +4964,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "75cf4dda9ef2fd7716653c749a36197d5030dde469899a40d3094adf92b808e4"
+    "storageHash": "eee9f513d71091ba14a7d3ef7a6697aeb4ff88f244c46ac00ff7c5693c378573"
   },
   "capabilities": {
     "postgres": {
