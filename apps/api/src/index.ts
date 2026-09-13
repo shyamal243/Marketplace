@@ -1071,6 +1071,26 @@ app.post("/returns/:id/decide", requireAuth, async (req: AuthRequest, res) => {
         });
       }
 
+      if (order.orderType === "store_order") {
+        const items = await tx.orm.public.OrderItem.where({ orderId: order.id }).all();
+        for (const item of items) {
+          const product = await tx.orm.public.Product.where({ id: item.productId }).first();
+          if (product) {
+            await tx.orm.public.Product.where({ id: product.id }).update({
+              stock: product.stock + item.quantity,
+            });
+          }
+        }
+      }
+
+      if (order.commissionAmount && order.commissionAmount > 0) {
+        await tx.orm.public.PlatformEarning.create({
+          type: "commission_reversal",
+          amount: -order.commissionAmount,
+          orderId: order.id,
+        });
+      }
+
       await tx.orm.public.Order.where({ id: order.id }).update({ status: "cancelled" });
 
       return tx.orm.public.ReturnRequest.where({ id: returnRequest.id }).update({ status: "completed" });
@@ -1295,6 +1315,28 @@ app.post("/orders/:id/cancel", requireAuth, async (req: AuthRequest, res) => {
       }
     }
 
+        if (order.orderType === "store_order") {
+      const items = await db.orm.public.OrderItem.where({ orderId: order.id }).all();
+
+      await db.transaction(async (tx) => {
+        for (const item of items) {
+          const product = await tx.orm.public.Product.where({ id: item.productId }).first();
+          if (product) {
+            await tx.orm.public.Product.where({ id: product.id }).update({
+              stock: product.stock + item.quantity,
+            });
+          }
+        }
+      });
+    }
+
+        if (order.commissionAmount && order.commissionAmount > 0) {
+      await db.orm.public.PlatformEarning.create({
+        type: "commission_reversal",
+        amount: -order.commissionAmount,
+        orderId: order.id,
+      });
+    }
     const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ status: "cancelled" });
 
     const notifyUserId = isBuyer ? order.sellerId : order.buyerId;
