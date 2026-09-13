@@ -47,7 +47,7 @@ model Bid {
 model Order {
   id        Int               @id @default(autoincrement())
   amount    Int
-  status    String            @default("confirmed") // "confirmed", "shipped", "delivered", "cancelled"
+  status    String            @default("confirmed") // "confirmed", "shipped", "delivered", "cancelled", "paid"
   demand    Demand            @relation(fields:[demandId], references:[id])
   demandId  Int
   bid       Bid               @relation(fields:[bidId], references:[id])

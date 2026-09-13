@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import { db } from "./prisma/db";
 import jwt from "jsonwebtoken";
 import Razorpay from "razorpay";
+import crypto from "crypto";
 
 interface AuthRequest extends express.Request {
   userId?: number;
@@ -431,6 +432,39 @@ app.post("/orders/:id/pay", requireAuth, async (req: AuthRequest, res) => {
       currency: razorpayOrder.currency,
       keyId: process.env.RAZORPAY_KEY_ID,
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/orders/:id/verify-payment", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the buyer for this order" });
+    }
+
+    const generatedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+      .digest("hex");
+
+    if (generatedSignature !== razorpaySignature) {
+      return res.status(400).json({ error: "Payment verification failed" });
+    }
+
+    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ status: "paid" });
+
+    res.status(200).json(updatedOrder);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
