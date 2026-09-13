@@ -887,6 +887,137 @@ app.post("/notifications/:id/read", requireAuth, async (req: AuthRequest, res) =
   }
 });
 
+app.post("/products", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "seller") {
+      return res.status(403).json({ error: "Only sellers can add products" });
+    }
+
+    const { name, description, price, stock } = req.body;
+
+    const product = await db.orm.public.Product.create({
+      name,
+      description,
+      price,
+      stock: stock ?? 0,
+      sellerId: req.userId!,
+    });
+
+    res.status(201).json(product);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/products/:id/remove", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const productId = Number(req.params.id);
+
+    const product = await db.orm.public.Product.where({ id: productId }).first();
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    if (product.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this product" });
+    }
+
+    const updated = await db.orm.public.Product.where({ id: product.id }).update({ isActive: false });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/sellers/:id/products", async (req, res) => {
+  try {
+    const sellerId = Number(req.params.id);
+    const { search } = req.query;
+
+    let products = await db.orm.public.Product.where({ sellerId, isActive: true }).all();
+
+    if (search) {
+      const term = String(search).toLowerCase();
+      products = products.filter((p) => p.name.toLowerCase().includes(term));
+    }
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/products/:id/rate", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const productId = Number(req.params.id);
+    const { rating, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ error: "Rating must be between 1 and 5" });
+    }
+
+    const product = await db.orm.public.Product.where({ id: productId }).first();
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const existing = await db.orm.public.ProductRating.where({
+      productId,
+      customerId: req.userId!,
+    }).first();
+
+    if (existing) {
+      return res.status(400).json({ error: "You have already rated this product" });
+    }
+
+    const productRating = await db.orm.public.ProductRating.create({
+      rating,
+      comment,
+      productId,
+      customerId: req.userId!,
+    });
+
+    res.status(201).json(productRating);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/products/:id", async (req, res) => {
+  try {
+    const productId = Number(req.params.id);
+
+    const product = await db.orm.public.Product.where({ id: productId }).first();
+
+    if (!product) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const ratings = await db.orm.public.ProductRating.where({ productId }).all();
+
+    const averageRating =
+      ratings.length > 0
+        ? ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
+        : null;
+
+    res.status(200).json({
+      ...product,
+      averageRating,
+      totalRatings: ratings.length,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
