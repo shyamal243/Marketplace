@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import rateLimit from "express-rate-limit";
+import cors from "cors";
 
 interface AuthRequest extends express.Request {
   userId?: number;
@@ -55,6 +56,10 @@ const razorpay = new Razorpay({
 });
 const PORT = 4000;
 
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true,
+}));
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -552,6 +557,62 @@ app.post("/orders/:id/deliver", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+app.post("/orders/:id/cancel", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    const { reason } = req.body;
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    const isBuyer = order.buyerId === req.userId;
+    const isSeller = order.sellerId === req.userId;
+
+    if (!isBuyer && !isSeller) {
+      return res.status(403).json({ error: "You are not part of this order" });
+    }
+
+    if (order.status !== "confirmed") {
+      return res.status(400).json({ error: `Cannot cancel an order with status "${order.status}"` });
+    }
+
+    if (order.isPaid) {
+      const buyer = await db.orm.public.User.where({ id: order.buyerId }).first();
+
+      if (buyer) {
+        await db.orm.public.User.where({ id: buyer.id }).update({
+          walletBalance: buyer.walletBalance + order.amount,
+        });
+
+        await db.orm.public.WalletTransaction.create({
+          amount: order.amount,
+          type: "credit",
+          reason: "order_cancelled_refund",
+          userId: buyer.id,
+        });
+      }
+    }
+
+    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ status: "cancelled" });
+
+    const notifyUserId = isBuyer ? order.sellerId : order.buyerId;
+
+    await db.orm.public.Notification.create({
+      message: `Order #${order.id} was cancelled${reason ? `: ${reason}` : ""}`,
+      type: "order_cancelled",
+      userId: notifyUserId,
+    });
+
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/orders/:id/review", requireAuth, async (req: AuthRequest, res) => {
   try {
     const orderId = Number(req.params.id);
@@ -754,6 +815,56 @@ app.post("/admin/settings/booking-fee", requireAuth, async (req: AuthRequest, re
   }
 });
 
+app.post("/admin/wallet/adjust", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access only" });
+    }
+
+    const { userId, amount, type, reason } = req.body;
+
+    if (!userId || typeof amount !== "number" || amount <= 0) {
+      return res.status(400).json({ error: "userId and a positive amount are required" });
+    }
+
+    if (type !== "credit" && type !== "debit") {
+      return res.status(400).json({ error: "type must be 'credit' or 'debit'" });
+    }
+
+    const user = await db.orm.public.User.where({ id: userId }).first();
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (type === "debit" && user.walletBalance < amount) {
+      return res.status(400).json({ error: "User does not have enough balance for this debit" });
+    }
+
+    const newBalance = type === "credit" ? user.walletBalance + amount : user.walletBalance - amount;
+
+    await db.orm.public.User.where({ id: user.id }).update({ walletBalance: newBalance });
+
+    const transaction = await db.orm.public.WalletTransaction.create({
+      amount,
+      type,
+      reason: reason ?? "admin_adjustment",
+      userId: user.id,
+    });
+
+    await db.orm.public.Notification.create({
+      message: `An admin ${type === "credit" ? "added" : "deducted"} ₹${amount} ${type === "credit" ? "to" : "from"} your wallet${reason ? `: ${reason}` : ""}`,
+      type: "wallet_adjustment",
+      userId: user.id,
+    });
+
+    res.status(200).json({ newBalance, transaction });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/wallet/topup", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { amount } = req.body;
@@ -903,7 +1014,7 @@ app.post("/orders/:id/verify-payment", requireAuth, async (req: AuthRequest, res
       return res.status(400).json({ error: "Payment verification failed" });
     }
 
-    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ status: "paid" });
+    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ isPaid: true });
 
     res.status(200).json(updatedOrder);
   } catch (error) {

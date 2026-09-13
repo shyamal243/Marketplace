@@ -1,24 +1,25 @@
 // use prisma-next
 model User {
-  id              Int                 @id @default(autoincrement())
-  email           String              @unique
+  id              Int                  @id @default(autoincrement())
+  email           String               @unique
   password        String
   name            String
-  role            String              @default("buyer") // "buyer" or "seller"
+  role            String               @default("buyer") // "buyer" or "seller"
   demands         Demand[]
   bids            Bid[]
-  ordersAsBuyer   Order[]             @relation("OrderBuyer")
-  ordersAsSeller  Order[]             @relation("OrderSeller")
-  reviewsGiven    Review[]            @relation("ReviewsGiven")
-  reviewsReceived Review[]            @relation("ReviewsReceived")
+  ordersAsBuyer   Order[]              @relation("OrderBuyer")
+  ordersAsSeller  Order[]              @relation("OrderSeller")
+  reviewsGiven    Review[]             @relation("ReviewsGiven")
+  reviewsReceived Review[]             @relation("ReviewsReceived")
   notifications   Notification[]
-  walletBalance   Int                 @default(0)
+  walletBalance   Int                  @default(0)
   walletTxns      WalletTransaction[]
   products        Product[]
   productRatings  ProductRating[]
+  passwordResets  PasswordResetToken[]
 
-  createdAt       TimestamptzString   @default(now())
-  updatedAt       TimestamptzString   @default(now())
+  createdAt       TimestamptzString    @default(now())
+  updatedAt       TimestamptzString    @default(now())
 }
 
 model Demand {
@@ -54,7 +55,8 @@ model Bid {
 model Order {
   id        Int               @id @default(autoincrement())
   amount    Int
-  status    String            @default("confirmed") // "confirmed", "shipped", "delivered", "cancelled", "paid"
+  status    String            @default("confirmed") // "confirmed", "shipped", "delivered", "cancelled"
+  isPaid    Boolean           @default(false)
   demand    Demand            @relation(fields:[demandId], references:[id])
   demandId  Int
   bid       Bid               @relation(fields:[bidId], references:[id])
@@ -140,5 +142,15 @@ model ProductRating {
 model BlockedToken {
   id        Int               @id @default(autoincrement())
   token     String            @unique
+  createdAt TimestamptzString @default(now())
+}
+
+model PasswordResetToken {
+  id        Int               @id @default(autoincrement())
+  token     String            @unique
+  user      User              @relation(fields:[userId], references:[id])
+  userId    Int
+  expiresAt TimestamptzString
+  used      Boolean           @default(false)
   createdAt TimestamptzString @default(now())
 }
