@@ -147,6 +147,44 @@ app.get("/demands/:id/bids", async (req, res) => {
   }
 });
 
+app.post("/bids/:id/accept", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const bidId = Number(req.params.id);
+
+    const bid = await db.orm.public.Bid.where({ id: bidId }).first();
+
+    if (!bid) {
+      return res.status(404).json({ error: "Bid not found" });
+    }
+
+    const demand = await db.orm.public.Demand.where({ id: bid.demandId }).first();
+
+    if (!demand) {
+      return res.status(404).json({ error: "Demand not found" });
+    }
+
+    if (demand.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this demand" });
+    }
+
+    const order = await db.orm.public.Order.create({
+      demandId: demand.id,
+      bidId: bid.id,
+      buyerId: demand.buyerId,
+      sellerId: bid.sellerId,
+      amount: bid.amount,
+    });
+
+    await db.orm.public.Bid.where({ id: bid.id }).update({ status: "accepted" });
+    await db.orm.public.Demand.where({ id: demand.id }).update({ status: "fulfilled" });
+
+    res.status(201).json(order);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
