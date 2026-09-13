@@ -185,6 +185,35 @@ app.post("/bids/:id/accept", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+app.post("/bids/:id/reject", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const bidId = Number(req.params.id);
+
+    const bid = await db.orm.public.Bid.where({ id: bidId }).first();
+
+    if (!bid) {
+      return res.status(404).json({ error: "Bid not found" });
+    }
+
+    const demand = await db.orm.public.Demand.where({ id: bid.demandId }).first();
+
+    if (!demand) {
+      return res.status(404).json({ error: "Demand not found" });
+    }
+
+    if (demand.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this demand" });
+    }
+
+    const updatedBid = await db.orm.public.Bid.where({ id: bid.id }).update({ status: "rejected" });
+
+    res.status(200).json(updatedBid);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
