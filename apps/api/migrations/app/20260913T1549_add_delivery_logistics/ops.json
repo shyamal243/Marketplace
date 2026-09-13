@@ -1,0 +1,536 @@
+[
+  {
+    "id": "table.deliveryAssignment",
+    "label": "Create table \"deliveryAssignment\"",
+    "summary": "Creates table \"deliveryAssignment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "deliveryAssignment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"deliveryAssignment\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"deliveryAssignment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"deliveryAssignment\"",
+        "sql": "CREATE TABLE \"public\".\"deliveryAssignment\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"deliveryPersonId\" int4 NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"orderId\" int4 NOT NULL,\n  \"status\" text DEFAULT 'assigned' NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"deliveryAssignment\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"deliveryAssignment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.returnRequest",
+    "label": "Create table \"returnRequest\"",
+    "summary": "Creates table \"returnRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "returnRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"returnRequest\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"returnRequest\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"returnRequest\"",
+        "sql": "CREATE TABLE \"public\".\"returnRequest\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"orderId\" int4 NOT NULL,\n  \"reason\" text NOT NULL,\n  \"requestedById\" int4 NOT NULL,\n  \"status\" text DEFAULT 'requested' NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"returnRequest\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"returnRequest\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.courierName",
+    "label": "Add column \"courierName\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "courierName",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"courierName\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "courierName"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"courierName\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"courierName\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"courierName\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "courierName"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.deliveryMode",
+    "label": "Add column \"deliveryMode\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "deliveryMode",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"deliveryMode\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "deliveryMode"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"deliveryMode\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"deliveryMode\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"deliveryMode\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "deliveryMode"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.trackingNumber",
+    "label": "Add column \"trackingNumber\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "trackingNumber",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"trackingNumber\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "trackingNumber"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"trackingNumber\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"trackingNumber\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"trackingNumber\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "trackingNumber"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.deliveryAssignment.deliveryAssignment_orderId_key",
+    "label": "Add unique constraint on \"deliveryAssignment\" (orderId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "deliveryAssignment_orderId_key",
+        "table": "deliveryAssignment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"deliveryAssignment_orderId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "deliveryAssignment_orderId_key",
+          "public",
+          "\"public\".\"deliveryAssignment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"deliveryAssignment_orderId_key\"",
+        "sql": "ALTER TABLE \"public\".\"deliveryAssignment\" ADD CONSTRAINT \"deliveryAssignment_orderId_key\" UNIQUE (\"orderId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"deliveryAssignment_orderId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "deliveryAssignment_orderId_key",
+          "public",
+          "\"public\".\"deliveryAssignment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.returnRequest.returnRequest_orderId_key",
+    "label": "Add unique constraint on \"returnRequest\" (orderId)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "returnRequest_orderId_key",
+        "table": "returnRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"returnRequest_orderId_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "returnRequest_orderId_key",
+          "public",
+          "\"public\".\"returnRequest\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"returnRequest_orderId_key\"",
+        "sql": "ALTER TABLE \"public\".\"returnRequest\" ADD CONSTRAINT \"returnRequest_orderId_key\" UNIQUE (\"orderId\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"returnRequest_orderId_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "returnRequest_orderId_key",
+          "public",
+          "\"public\".\"returnRequest\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.deliveryAssignment.deliveryAssignment_deliveryPersonId_idx_02b8a2c8",
+    "label": "Create index \"deliveryAssignment_deliveryPersonId_idx_02b8a2c8\" on \"deliveryAssignment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "deliveryAssignment_deliveryPersonId_idx_02b8a2c8",
+        "table": "deliveryAssignment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"deliveryAssignment_deliveryPersonId_idx_02b8a2c8\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"deliveryAssignment_deliveryPersonId_idx_02b8a2c8\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"deliveryAssignment_deliveryPersonId_idx_02b8a2c8\"",
+        "sql": "CREATE INDEX \"deliveryAssignment_deliveryPersonId_idx_02b8a2c8\" ON \"public\".\"deliveryAssignment\" (\"deliveryPersonId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"deliveryAssignment_deliveryPersonId_idx_02b8a2c8\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"deliveryAssignment_deliveryPersonId_idx_02b8a2c8\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.returnRequest.returnRequest_requestedById_idx_f9a56c66",
+    "label": "Create index \"returnRequest_requestedById_idx_f9a56c66\" on \"returnRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "returnRequest_requestedById_idx_f9a56c66",
+        "table": "returnRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"returnRequest_requestedById_idx_f9a56c66\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"returnRequest_requestedById_idx_f9a56c66\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"returnRequest_requestedById_idx_f9a56c66\"",
+        "sql": "CREATE INDEX \"returnRequest_requestedById_idx_f9a56c66\" ON \"public\".\"returnRequest\" (\"requestedById\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"returnRequest_requestedById_idx_f9a56c66\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"returnRequest_requestedById_idx_f9a56c66\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.deliveryAssignment.deliveryAssignment_orderId_fkey",
+    "label": "Add foreign key \"deliveryAssignment_orderId_fkey\" on \"deliveryAssignment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "deliveryAssignment_orderId_fkey",
+        "table": "deliveryAssignment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"deliveryAssignment_orderId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "deliveryAssignment_orderId_fkey",
+          "public",
+          "\"public\".\"deliveryAssignment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"deliveryAssignment_orderId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"deliveryAssignment\"\nADD CONSTRAINT \"deliveryAssignment_orderId_fkey\"\nFOREIGN KEY (\"orderId\")\nREFERENCES \"public\".\"order\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"deliveryAssignment_orderId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "deliveryAssignment_orderId_fkey",
+          "public",
+          "\"public\".\"deliveryAssignment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.deliveryAssignment.deliveryAssignment_deliveryPersonId_fkey",
+    "label": "Add foreign key \"deliveryAssignment_deliveryPersonId_fkey\" on \"deliveryAssignment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "deliveryAssignment_deliveryPersonId_fkey",
+        "table": "deliveryAssignment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"deliveryAssignment_deliveryPersonId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "deliveryAssignment_deliveryPersonId_fkey",
+          "public",
+          "\"public\".\"deliveryAssignment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"deliveryAssignment_deliveryPersonId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"deliveryAssignment\"\nADD CONSTRAINT \"deliveryAssignment_deliveryPersonId_fkey\"\nFOREIGN KEY (\"deliveryPersonId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"deliveryAssignment_deliveryPersonId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "deliveryAssignment_deliveryPersonId_fkey",
+          "public",
+          "\"public\".\"deliveryAssignment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.returnRequest.returnRequest_orderId_fkey",
+    "label": "Add foreign key \"returnRequest_orderId_fkey\" on \"returnRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "returnRequest_orderId_fkey",
+        "table": "returnRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"returnRequest_orderId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "returnRequest_orderId_fkey",
+          "public",
+          "\"public\".\"returnRequest\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"returnRequest_orderId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"returnRequest\"\nADD CONSTRAINT \"returnRequest_orderId_fkey\"\nFOREIGN KEY (\"orderId\")\nREFERENCES \"public\".\"order\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"returnRequest_orderId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "returnRequest_orderId_fkey",
+          "public",
+          "\"public\".\"returnRequest\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.returnRequest.returnRequest_requestedById_fkey",
+    "label": "Add foreign key \"returnRequest_requestedById_fkey\" on \"returnRequest\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "returnRequest_requestedById_fkey",
+        "table": "returnRequest"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"returnRequest_requestedById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "returnRequest_requestedById_fkey",
+          "public",
+          "\"public\".\"returnRequest\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"returnRequest_requestedById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"returnRequest\"\nADD CONSTRAINT \"returnRequest_requestedById_fkey\"\nFOREIGN KEY (\"requestedById\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"returnRequest_requestedById_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "returnRequest_requestedById_fkey",
+          "public",
+          "\"public\".\"returnRequest\""
+        ]
+      }
+    ]
+  }
+]

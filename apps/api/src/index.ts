@@ -570,6 +570,7 @@ app.post("/bids/:id/reject", requireAuth, async (req: AuthRequest, res) => {
 app.post("/orders/:id/ship", requireAuth, async (req: AuthRequest, res) => {
   try {
     const orderId = Number(req.params.id);
+    const { deliveryMode, deliveryPersonId, trackingNumber, courierName } = req.body;
 
     const order = await db.orm.public.Order.where({ id: orderId }).first();
 
@@ -585,9 +586,258 @@ app.post("/orders/:id/ship", requireAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: `Cannot ship an order with status "${order.status}"` });
     }
 
-    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ status: "shipped" });
+    if (deliveryMode !== "local" && deliveryMode !== "courier") {
+      return res.status(400).json({ error: "deliveryMode must be 'local' or 'courier'" });
+    }
+
+    if (deliveryMode === "local") {
+      if (!deliveryPersonId) {
+        return res.status(400).json({ error: "deliveryPersonId is required for local delivery" });
+      }
+
+      const deliveryPerson = await db.orm.public.User.where({ id: deliveryPersonId }).first();
+
+      if (!deliveryPerson || deliveryPerson.role !== "delivery") {
+        return res.status(400).json({ error: "deliveryPersonId must belong to a user with role 'delivery'" });
+      }
+
+      const updatedOrder = await db.transaction(async (tx) => {
+        await tx.orm.public.DeliveryAssignment.create({
+          orderId: order.id,
+          deliveryPersonId,
+        });
+
+        return tx.orm.public.Order.where({ id: order.id }).update({
+          status: "shipped",
+          deliveryMode: "local",
+        });
+      });
+
+      await db.orm.public.Notification.create({
+        message: `You've been assigned a local delivery for order #${order.id}`,
+        type: "delivery_assigned",
+        userId: deliveryPersonId,
+      });
+
+      return res.status(200).json(updatedOrder);
+    }
+
+    if (!trackingNumber || !courierName) {
+      return res.status(400).json({ error: "trackingNumber and courierName are required for courier delivery" });
+    }
+
+    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({
+      status: "shipped",
+      deliveryMode: "courier",
+      trackingNumber,
+      courierName,
+    });
 
     res.status(200).json(updatedOrder);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/deliveries/:orderId/status", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.orderId);
+    const { status } = req.body;
+
+    const allowedStatuses = ["picked_up", "out_for_delivery", "delivered"];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${allowedStatuses.join(", ")}` });
+    }
+
+    const assignment = await db.orm.public.DeliveryAssignment.where({ orderId }).first();
+
+    if (!assignment) {
+      return res.status(404).json({ error: "No delivery assignment found for this order" });
+    }
+
+    if (assignment.deliveryPersonId !== req.userId) {
+      return res.status(403).json({ error: "This delivery is not assigned to you" });
+    }
+
+    const updatedAssignment = await db.transaction(async (tx) => {
+      const updated = await tx.orm.public.DeliveryAssignment.where({ id: assignment.id }).update({ status });
+
+      if (status === "delivered") {
+        await tx.orm.public.Order.where({ id: orderId }).update({ status: "delivered" });
+      }
+
+      return updated;
+    });
+
+    res.status(200).json(updatedAssignment);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/orders/:id/tracking", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId && order.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You are not part of this order" });
+    }
+
+    if (order.deliveryMode === "local") {
+      const assignment = await db.orm.public.DeliveryAssignment.where({ orderId }).first();
+
+      return res.status(200).json({
+        deliveryMode: "local",
+        orderStatus: order.status,
+        deliveryStatus: assignment?.status ?? null,
+      });
+    }
+
+    if (order.deliveryMode === "courier") {
+      return res.status(200).json({
+        deliveryMode: "courier",
+        orderStatus: order.status,
+        courierName: order.courierName,
+        trackingNumber: order.trackingNumber,
+      });
+    }
+
+    res.status(200).json({
+      deliveryMode: null,
+      orderStatus: order.status,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/orders/:id/return", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    const { reason } = req.body;
+
+    if (!reason) {
+      return res.status(400).json({ error: "reason is required" });
+    }
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the buyer for this order" });
+    }
+
+    if (order.status !== "delivered") {
+      return res.status(400).json({ error: "Can only return delivered orders" });
+    }
+
+    const existing = await db.orm.public.ReturnRequest.where({ orderId: order.id }).first();
+
+    if (existing) {
+      return res.status(400).json({ error: "A return has already been requested for this order" });
+    }
+
+    const returnRequest = await db.orm.public.ReturnRequest.create({
+      orderId: order.id,
+      reason,
+      requestedById: req.userId!,
+    });
+
+    await db.orm.public.Notification.create({
+      message: `A return was requested for order #${order.id}: ${reason}`,
+      type: "return_requested",
+      userId: order.sellerId,
+    });
+
+    res.status(201).json(returnRequest);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/returns/:id/decide", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const returnId = Number(req.params.id);
+    const { decision } = req.body;
+
+    if (decision !== "approved" && decision !== "rejected") {
+      return res.status(400).json({ error: "decision must be 'approved' or 'rejected'" });
+    }
+
+    const returnRequest = await db.orm.public.ReturnRequest.where({ id: returnId }).first();
+
+    if (!returnRequest) {
+      return res.status(404).json({ error: "Return request not found" });
+    }
+
+    const order = await db.orm.public.Order.where({ id: returnRequest.orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.sellerId !== req.userId && req.userRole !== "admin") {
+      return res.status(403).json({ error: "Only the seller or an admin can decide on this return" });
+    }
+
+    if (returnRequest.status !== "requested") {
+      return res.status(400).json({ error: `This return has already been ${returnRequest.status}` });
+    }
+
+    if (decision === "rejected") {
+      const updated = await db.orm.public.ReturnRequest.where({ id: returnRequest.id }).update({ status: "rejected" });
+
+      await db.orm.public.Notification.create({
+        message: `Your return request for order #${order.id} was rejected`,
+        type: "return_rejected",
+        userId: order.buyerId,
+      });
+
+      return res.status(200).json(updated);
+    }
+
+    const buyer = await db.orm.public.User.where({ id: order.buyerId }).first();
+
+    const updated = await db.transaction(async (tx) => {
+      if (buyer) {
+        await tx.orm.public.User.where({ id: buyer.id }).update({
+          walletBalance: buyer.walletBalance + order.amount,
+        });
+
+        await tx.orm.public.WalletTransaction.create({
+          amount: order.amount,
+          type: "credit",
+          reason: "return_refund",
+          userId: buyer.id,
+        });
+      }
+
+      await tx.orm.public.Order.where({ id: order.id }).update({ status: "cancelled" });
+
+      return tx.orm.public.ReturnRequest.where({ id: returnRequest.id }).update({ status: "completed" });
+    });
+
+    await db.orm.public.Notification.create({
+      message: `Your return for order #${order.id} was approved and refunded`,
+      type: "return_approved",
+      userId: order.buyerId,
+    });
+
+    res.status(200).json(updated);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
