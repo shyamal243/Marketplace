@@ -154,3 +154,9 @@ model PasswordResetToken {
   used      Boolean           @default(false)
   createdAt TimestamptzString @default(now())
 }
+
+model ProcessedPayment {
+  id                Int               @id @default(autoincrement())
+  razorpayPaymentId String            @unique
+  createdAt         TimestamptzString @default(now())
+}

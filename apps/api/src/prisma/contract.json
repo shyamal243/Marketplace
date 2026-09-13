@@ -32,6 +32,10 @@
       "model": "PlatformSetting",
       "namespace": "public"
     },
+    "processedPayment": {
+      "model": "ProcessedPayment",
+      "namespace": "public"
+    },
     "product": {
       "model": "Product",
       "namespace": "public"
@@ -787,6 +791,47 @@
               },
               "namespaceId": "public",
               "table": "platformSetting"
+            }
+          },
+          "ProcessedPayment": {
+            "fields": {
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "razorpayPaymentId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {},
+            "storage": {
+              "fields": {
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "razorpayPaymentId": {
+                  "column": "razorpayPaymentId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "processedPayment"
             }
           },
           "Product": {
@@ -2168,6 +2213,47 @@
                 }
               ]
             },
+            "processedPayment": {
+              "columns": {
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "razorpayPaymentId": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [],
+              "indexes": [],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": [
+                {
+                  "columns": [
+                    "razorpayPaymentId"
+                  ]
+                }
+              ]
+            },
             "product": {
               "columns": {
                 "createdAt": {
@@ -2683,7 +2769,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "66825b19379b5ad3dce4d78bef0a83d72b4bf07b4402d69a19c6e8e13d618acc"
+    "storageHash": "3b2d6895b83f9135284cdf89ac723dcb3db3acc3453db16eae16e015c0bd792f"
   },
   "capabilities": {
     "postgres": {

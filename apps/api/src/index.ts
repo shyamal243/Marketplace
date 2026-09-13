@@ -6,6 +6,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
+import helmet from "helmet";
 
 
 interface AuthRequest extends express.Request {
@@ -42,7 +43,14 @@ async function requireAuth(req: AuthRequest, res: express.Response, next: expres
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
+const requiredEnvVars = ["JWT_SECRET", "DATABASE_URL", "RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET"];
 
+for (const key of requiredEnvVars) {
+  if (!process.env[key]) {
+    console.error(`Missing required environment variable: ${key}`);
+    process.exit(1);
+  }
+}
 const app = express();
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -61,6 +69,7 @@ app.use(cors({
   origin: "http://localhost:3000",
   credentials: true,
 }));
+app.use(helmet());
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -69,10 +78,23 @@ app.get("/", (req, res) => {
 
 app.post("/signup", async (req, res) => {
   try {
-    const { email, password, name, role } = req.body;
+    const { password, name, role } = req.body;
+    let { email } = req.body;
 
     if (!email || !password || !name) {
       return res.status(400).json({ error: "email, password, and name are required" });
+    }
+
+    email = email.trim().toLowerCase();
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(email)) {
+      return res.status(400).json({ error: "Please provide a valid email address" });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters" });
     }
 
     const existingUser = await db.orm.public.User.where({ email }).first();
@@ -100,7 +122,8 @@ app.post("/signup", async (req, res) => {
 
 app.post("/login", loginLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = req.body.email?.trim().toLowerCase();
 
     const user = await db.orm.public.User.where({ email }).first();
 
@@ -273,6 +296,14 @@ app.post("/demands/:id/verify-fee-payment", requireAuth, async (req: AuthRequest
     if (generatedSignature !== razorpaySignature) {
       return res.status(400).json({ error: "Payment verification failed" });
     }
+
+    const alreadyProcessed = await db.orm.public.ProcessedPayment.where({ razorpayPaymentId }).first();
+
+    if (alreadyProcessed) {
+      return res.status(400).json({ error: "This payment has already been processed" });
+    }
+
+    await db.orm.public.ProcessedPayment.create({ razorpayPaymentId });
 
     const updatedDemand = await db.orm.public.Demand.where({ id: demand.id }).update({
       status: "open",
@@ -924,6 +955,14 @@ app.post("/wallet/verify-topup", requireAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: "Payment verification failed" });
     }
 
+    const alreadyProcessed = await db.orm.public.ProcessedPayment.where({ razorpayPaymentId }).first();
+
+    if (alreadyProcessed) {
+      return res.status(400).json({ error: "This payment has already been processed" });
+    }
+
+    await db.orm.public.ProcessedPayment.create({ razorpayPaymentId });
+
     const user = await db.orm.public.User.where({ id: req.userId! }).first();
 
     if (!user) {
@@ -1033,6 +1072,14 @@ app.post("/orders/:id/verify-payment", requireAuth, async (req: AuthRequest, res
     if (generatedSignature !== razorpaySignature) {
       return res.status(400).json({ error: "Payment verification failed" });
     }
+
+    const alreadyProcessed = await db.orm.public.ProcessedPayment.where({ razorpayPaymentId }).first();
+
+    if (alreadyProcessed) {
+      return res.status(400).json({ error: "This payment has already been processed" });
+    }
+
+    await db.orm.public.ProcessedPayment.create({ razorpayPaymentId });
 
     const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ isPaid: true });
 
