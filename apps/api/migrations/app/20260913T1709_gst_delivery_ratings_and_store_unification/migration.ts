@@ -1,4 +1,5 @@
 #!/usr/bin/env -S node
+// @ts-nocheck
 import type { Contract as End } from '../../snapshots/2bc92155b3451b0d6f3d143ce06faddf0d5a8fbcf34a1baee1f012432244c404/contract';
 import endContract from '../../snapshots/2bc92155b3451b0d6f3d143ce06faddf0d5a8fbcf34a1baee1f012432244c404/contract.json' with { type: 'json' };
 import type { Contract as Start } from '../../snapshots/5970733cd957f197dee0d032bc1624b27c5cf2ffce37be2d841c8891ae26fc88/contract';

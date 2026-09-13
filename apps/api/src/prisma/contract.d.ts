@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'2bc92155b3451b0d6f3d143ce06faddf0d5a8fbcf34a1baee1f012432244c404'>;
+  StorageHashBase<'75cf4dda9ef2fd7716653c749a36197d5030dde469899a40d3094adf92b808e4'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -298,6 +298,17 @@ export type FieldOutputTypes = {
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly ratePercent: CodecTypes['pg/int4@1']['output'];
     };
+    readonly KycDocument: {
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly documentType: CodecTypes['pg/text@1']['output'];
+      readonly documentNumber: CodecTypes['pg/text@1']['output'] | null;
+      readonly fileUrl: CodecTypes['pg/text@1']['output'] | null;
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly rejectionReason: CodecTypes['pg/text@1']['output'] | null;
+      readonly userId: CodecTypes['pg/int4@1']['output'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+    };
     readonly Notification: {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly message: CodecTypes['pg/text@1']['output'];
@@ -409,6 +420,7 @@ export type FieldOutputTypes = {
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly role: CodecTypes['pg/text@1']['output'];
       readonly walletBalance: CodecTypes['pg/int4@1']['output'];
+      readonly kycStatus: CodecTypes['pg/text@1']['output'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
     };
@@ -481,6 +493,17 @@ export type FieldInputTypes = {
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly category: CodecTypes['pg/text@1']['input'];
       readonly ratePercent: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly KycDocument: {
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly documentType: CodecTypes['pg/text@1']['input'];
+      readonly documentNumber: CodecTypes['pg/text@1']['input'] | null;
+      readonly fileUrl: CodecTypes['pg/text@1']['input'] | null;
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly rejectionReason: CodecTypes['pg/text@1']['input'] | null;
+      readonly userId: CodecTypes['pg/int4@1']['input'];
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
     readonly Notification: {
       readonly id: CodecTypes['pg/int4@1']['input'];
@@ -593,6 +616,7 @@ export type FieldInputTypes = {
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly role: CodecTypes['pg/text@1']['input'];
       readonly walletBalance: CodecTypes['pg/int4@1']['input'];
+      readonly kycStatus: CodecTypes['pg/text@1']['input'];
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
     };
@@ -665,6 +689,17 @@ export type StorageColumnTypes = {
       readonly category: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly ratePercent: CodecTypes['pg/int4@1']['output'];
+    };
+    readonly kycDocument: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly documentNumber: CodecTypes['pg/text@1']['output'] | null;
+      readonly documentType: CodecTypes['pg/text@1']['output'];
+      readonly fileUrl: CodecTypes['pg/text@1']['output'] | null;
+      readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly rejectionReason: CodecTypes['pg/text@1']['output'] | null;
+      readonly status: CodecTypes['pg/text@1']['output'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly userId: CodecTypes['pg/int4@1']['output'];
     };
     readonly notification: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
@@ -774,6 +809,7 @@ export type StorageColumnTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
       readonly email: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly kycStatus: CodecTypes['pg/text@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly password: CodecTypes['pg/text@1']['output'];
       readonly role: CodecTypes['pg/text@1']['output'];
@@ -849,6 +885,17 @@ export type StorageColumnInputTypes = {
       readonly category: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly ratePercent: CodecTypes['pg/int4@1']['input'];
+    };
+    readonly kycDocument: {
+      readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly documentNumber: CodecTypes['pg/text@1']['input'] | null;
+      readonly documentType: CodecTypes['pg/text@1']['input'];
+      readonly fileUrl: CodecTypes['pg/text@1']['input'] | null;
+      readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly rejectionReason: CodecTypes['pg/text@1']['input'] | null;
+      readonly status: CodecTypes['pg/text@1']['input'];
+      readonly updatedAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly userId: CodecTypes['pg/int4@1']['input'];
     };
     readonly notification: {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
@@ -958,6 +1005,7 @@ export type StorageColumnInputTypes = {
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
       readonly email: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly kycStatus: CodecTypes['pg/text@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly password: CodecTypes['pg/text@1']['input'];
       readonly role: CodecTypes['pg/text@1']['input'];
@@ -1492,6 +1540,89 @@ type ContractBase = Omit<
               uniques: readonly [{ readonly columns: readonly ['category'] }];
               indexes: readonly [];
               foreignKeys: readonly [];
+            };
+            readonly kycDocument: {
+              columns: {
+                readonly id: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'function';
+                    readonly expression: 'autoincrement()';
+                  };
+                };
+                readonly documentType: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                };
+                readonly documentNumber: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly fileUrl: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly status: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'pending'>;
+                  };
+                };
+                readonly rejectionReason: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly userId: {
+                  readonly nativeType: 'int4';
+                  readonly codecId: 'pg/int4@1';
+                  readonly nullable: false;
+                };
+                readonly createdAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+                readonly updatedAt: {
+                  readonly nativeType: 'timestamptz';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                  readonly nullable: false;
+                  readonly default: { readonly kind: 'function'; readonly expression: 'now()' };
+                };
+              };
+              primaryKey: { readonly columns: readonly ['id'] };
+              uniques: readonly [];
+              indexes: readonly [
+                {
+                  readonly name: 'kycDocument_userId_idx_a489d58a';
+                  readonly prefix: 'kycDocument_userId_idx';
+                  readonly columns: readonly ['userId'];
+                  readonly unique: false;
+                },
+              ];
+              foreignKeys: readonly [
+                {
+                  readonly source: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'kycDocument';
+                    readonly columns: readonly ['userId'];
+                  };
+                  readonly target: {
+                    readonly namespaceId: 'public' & NamespaceId;
+                    readonly tableName: 'user';
+                    readonly columns: readonly ['id'];
+                  };
+                },
+              ];
             };
             readonly notification: {
               columns: {
@@ -2473,6 +2604,15 @@ type ContractBase = Omit<
                     readonly value: DefaultLiteralValue<'pg/int4@1', 0>;
                   };
                 };
+                readonly kycStatus: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/text@1', 'not_submitted'>;
+                  };
+                };
                 readonly createdAt: {
                   readonly nativeType: 'timestamptz';
                   readonly codecId: 'pg/timestamptz-string@1';
@@ -2618,6 +2758,10 @@ type ContractBase = Omit<
     };
     readonly store: { readonly namespace: 'public' & NamespaceId; readonly model: 'Store' };
     readonly orderItem: { readonly namespace: 'public' & NamespaceId; readonly model: 'OrderItem' };
+    readonly kycDocument: {
+      readonly namespace: 'public' & NamespaceId;
+      readonly model: 'KycDocument';
+    };
   };
   readonly domain: {
     readonly namespaces: {
@@ -3085,6 +3229,77 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly category: { readonly column: 'category' };
                 readonly ratePercent: { readonly column: 'ratePercent' };
+              };
+            };
+          };
+          readonly KycDocument: {
+            readonly fields: {
+              readonly id: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly documentType: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly documentNumber: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly fileUrl: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly status: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly rejectionReason: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly userId: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
+              };
+              readonly createdAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+              readonly updatedAt: {
+                readonly nullable: false;
+                readonly type: {
+                  readonly kind: 'scalar';
+                  readonly codecId: 'pg/timestamptz-string@1';
+                };
+              };
+            };
+            readonly relations: {
+              readonly user: {
+                readonly to: { readonly namespace: 'public' & NamespaceId; readonly model: 'User' };
+                readonly cardinality: 'N:1';
+                readonly on: {
+                  readonly localFields: readonly ['userId'];
+                  readonly targetFields: readonly ['id'];
+                };
+              };
+            };
+            readonly storage: {
+              readonly table: 'kycDocument';
+              readonly namespaceId: 'public';
+              readonly fields: {
+                readonly id: { readonly column: 'id' };
+                readonly documentType: { readonly column: 'documentType' };
+                readonly documentNumber: { readonly column: 'documentNumber' };
+                readonly fileUrl: { readonly column: 'fileUrl' };
+                readonly status: { readonly column: 'status' };
+                readonly rejectionReason: { readonly column: 'rejectionReason' };
+                readonly userId: { readonly column: 'userId' };
+                readonly createdAt: { readonly column: 'createdAt' };
+                readonly updatedAt: { readonly column: 'updatedAt' };
               };
             };
           };
@@ -3955,6 +4170,10 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/int4@1' };
               };
+              readonly kycStatus: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
               readonly createdAt: {
                 readonly nullable: false;
                 readonly type: {
@@ -4010,6 +4229,17 @@ type ContractBase = Omit<
                 readonly on: {
                   readonly localFields: readonly ['id'];
                   readonly targetFields: readonly ['buyerId'];
+                };
+              };
+              readonly kycDocuments: {
+                readonly to: {
+                  readonly namespace: 'public' & NamespaceId;
+                  readonly model: 'KycDocument';
+                };
+                readonly cardinality: '1:N';
+                readonly on: {
+                  readonly localFields: readonly ['id'];
+                  readonly targetFields: readonly ['userId'];
                 };
               };
               readonly notifications: {
@@ -4155,6 +4385,7 @@ type ContractBase = Omit<
                 readonly name: { readonly column: 'name' };
                 readonly role: { readonly column: 'role' };
                 readonly walletBalance: { readonly column: 'walletBalance' };
+                readonly kycStatus: { readonly column: 'kycStatus' };
                 readonly createdAt: { readonly column: 'createdAt' };
                 readonly updatedAt: { readonly column: 'updatedAt' };
               };

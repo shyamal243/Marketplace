@@ -22,6 +22,8 @@ model User {
   deliveryRatingsGiven DeliveryRating[]
   tipsGiven            DeliveryTip[]        @relation("TipsGiven")
   tipsReceived         DeliveryTip[]        @relation("TipsReceived")
+  kycDocuments         KycDocument[]
+  kycStatus            String               @default("not_submitted") // "not_submitted", "pending", "approved", "rejected"
 
   createdAt            TimestamptzString    @default(now())
   updatedAt            TimestamptzString    @default(now())
@@ -259,4 +261,17 @@ model OrderItem {
   productId       Int
   quantity        Int
   priceAtPurchase Int
+}
+
+model KycDocument {
+  id              Int               @id @default(autoincrement())
+  documentType    String // "aadhaar", "pan", "bank_account", "photo"
+  documentNumber  String?
+  fileUrl         String?
+  status          String            @default("pending") // "pending", "approved", "rejected"
+  rejectionReason String?
+  user            User              @relation(fields:[userId], references:[id])
+  userId          Int
+  createdAt       TimestamptzString @default(now())
+  updatedAt       TimestamptzString @default(now())
 }
