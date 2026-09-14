@@ -52,6 +52,14 @@ export default function HomePage() {
         <div className="flex items-center gap-4">
           {user ? (
             <>
+              {user.role === "admin" && (
+                <Link
+                  href="/admin"
+                  className="font-body text-sm text-marigold transition hover:text-paper"
+                >
+                  Admin
+                </Link>
+              )}
               {user.role === "seller" && (
                 <Link
                   href="/store/new"
