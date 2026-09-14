@@ -60,6 +60,14 @@ export default function HomePage() {
                   Open a store
                 </Link>
               )}
+              {user.role === "delivery" && (
+                <Link
+                  href="/deliveries"
+                  className="font-body text-sm text-indigo-border transition hover:text-paper"
+                >
+                  Deliveries
+                </Link>
+              )}
               <Link
                 href="/notifications"
                 className="font-body text-sm text-indigo-border transition hover:text-paper"
