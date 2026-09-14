@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, use } from "react";
 import { apiFetch } from "../../lib/api";
@@ -24,6 +24,12 @@ interface Bid {
 interface User {
   id: number;
   role: string;
+}
+
+declare global {
+  interface Window {
+    Razorpay: new (options: Record<string, unknown>) => { open: () => void };
+  }
 }
 
 export default function DemandDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -107,6 +113,61 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
     }
   }
 
+  async function handlePayFeeWallet() {
+    setError("");
+    try {
+      await apiFetch(`/demands/${id}/pay-fee`, {
+        method: "POST",
+        body: JSON.stringify({ method: "wallet" }),
+      });
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
+  async function handlePayFeeRazorpay() {
+    setError("");
+    try {
+      const order = await apiFetch(`/demands/${id}/pay-fee`, {
+        method: "POST",
+        body: JSON.stringify({ method: "razorpay" }),
+      });
+
+      const razorpay = new window.Razorpay({
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency,
+        order_id: order.razorpayOrderId,
+        name: "Demand Board",
+        description: "Booking fee",
+        handler: async (response: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }) => {
+          try {
+            await apiFetch(`/demands/${id}/verify-fee-payment`, {
+              method: "POST",
+              body: JSON.stringify({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+              }),
+            });
+            await loadData();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Payment verification failed");
+          }
+        },
+      });
+
+      razorpay.open();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
   if (loading) {
     return <div className="min-h-screen bg-indigo-deep px-8 py-12 text-paper md:px-16">Loading...</div>;
   }
@@ -149,6 +210,29 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
           <p className="mt-4 rounded-md bg-red-500/10 px-4 py-3 font-body text-sm text-red-300">
             {error}
           </p>
+        )}
+
+        {isOwner && demand.status === "pending_payment" && (
+          <div className="mt-6 rounded-lg bg-paper p-6">
+            <h2 className="font-display text-lg font-semibold text-ink">Pay booking fee</h2>
+            <p className="mt-1 font-body text-sm text-ink/70">
+              Your demand is posted but not yet visible to sellers until the fee is paid.
+            </p>
+            <div className="mt-4 flex gap-3">
+              <button
+                onClick={handlePayFeeWallet}
+                className="rounded-md bg-indigo-deep px-4 py-2.5 font-body font-medium text-paper transition hover:bg-indigo-surface"
+              >
+                Pay from wallet
+              </button>
+              <button
+                onClick={handlePayFeeRazorpay}
+                className="rounded-md border border-ink/20 px-4 py-2.5 font-body font-medium text-ink transition hover:border-marigold"
+              >
+                Pay with Razorpay
+              </button>
+            </div>
+          </div>
         )}
 
         {canBid && (
