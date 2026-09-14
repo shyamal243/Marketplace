@@ -53,7 +53,12 @@ export default function HomePage() {
     loadDemands(search, maxBudget);
   }
 
-  function handleLogout() {
+  async function handleLogout() {
+    try {
+      await apiFetch("/logout", { method: "POST" });
+    } catch {
+      // even if this fails, still clear local session
+    }
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
@@ -81,6 +86,14 @@ export default function HomePage() {
               >
                 Browse stores
               </Link>
+              {(user.role === "seller" || user.role === "delivery") && (
+                <Link
+                  href="/kyc"
+                  className="font-body text-sm text-indigo-border transition hover:text-paper"
+                >
+                  Verification
+                </Link>
+              )}
               {user.role === "seller" && (
                 <Link
                   href="/store/new"
@@ -189,30 +202,36 @@ export default function HomePage() {
 
         <div className="mt-8 flex flex-col gap-4">
           {demands.map((d) => (
-            <Link
+            <div
               key={d.id}
-              href={`/demands/${d.id}`}
               className="block rounded-lg border border-indigo-border/40 bg-indigo-surface px-6 py-5 transition hover:border-marigold/60"
             >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="font-display text-lg font-semibold text-paper">{d.title}</h2>
-                  {d.description && (
-                    <p className="mt-1 font-body text-sm text-indigo-border">{d.description}</p>
-                  )}
-                  {d.category && (
-                    <span className="mt-2 inline-block rounded-full bg-marigold/15 px-2.5 py-0.5 font-body text-xs text-marigold">
-                      {d.category}
+              <Link href={`/demands/${d.id}`}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="font-display text-lg font-semibold text-paper">{d.title}</h2>
+                    {d.description && (
+                      <p className="mt-1 font-body text-sm text-indigo-border">{d.description}</p>
+                    )}
+                    {d.category && (
+                      <span className="mt-2 inline-block rounded-full bg-marigold/15 px-2.5 py-0.5 font-body text-xs text-marigold">
+                        {d.category}
+                      </span>
+                    )}
+                  </div>
+                  {d.budget && (
+                    <span className="whitespace-nowrap font-display text-lg font-semibold text-marigold">
+                      ₹{d.budget}
                     </span>
                   )}
                 </div>
-                {d.budget && (
-                  <span className="whitespace-nowrap font-display text-lg font-semibold text-marigold">
-                    ₹{d.budget}
-                  </span>
-                )}
-              </div>
-            </Link>
+              </Link>
+              {user?.id && d.status === "open" && (
+                <p className="mt-3 font-body text-xs text-indigo-border">
+                  Owner? Manage cancellation from the demand page.
+                </p>
+              )}
+            </div>
           ))}
         </div>
       </main>
