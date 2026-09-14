@@ -2,6 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
+  '@sentry/cli': true
   bcrypt: true
   esbuild: true
   msgpackr-extract: true

@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import express from "express";
 import bcrypt from "bcrypt";
 import { db } from "./prisma/db";
@@ -84,7 +85,12 @@ async function calculateRoadDistanceKm(lat1: number, lon1: number, lat2: number,
     return R * c;
   }
 }
-
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    tracesSampleRate: 0.1,
+  });
+}
 const requiredEnvVars = ["JWT_SECRET", "DATABASE_URL", "RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "ORS_API_KEY"];
 
 for (const key of requiredEnvVars) {
@@ -2563,6 +2569,14 @@ app.use((req, res) => {
 });
 
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error(err);
+  res.status(500).json({ error: "Internal server error" });
+});
+
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(err);
+  }
   console.error(err);
   res.status(500).json({ error: "Internal server error" });
 });
