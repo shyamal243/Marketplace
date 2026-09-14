@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { apiFetch } from "../lib/api";
+import { apiFetch, trackEvent } from "../lib/api";
 
 const ROLES = [
   { value: "buyer", label: "Buyer", blurb: "Post what you need" },
@@ -46,6 +46,7 @@ export default function SignupPage() {
 
       localStorage.setItem("token", loginData.token);
       localStorage.setItem("user", JSON.stringify(loginData.user));
+      trackEvent("sign_up", { role });
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

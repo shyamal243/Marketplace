@@ -25,3 +25,15 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
 
   return data;
 }
+
+declare global {
+  interface Window {
+    dataLayer?: unknown[];
+  }
+}
+
+export function trackEvent(eventName: string, params?: Record<string, unknown>) {
+  if (typeof window !== "undefined" && window.dataLayer) {
+    window.dataLayer.push({ event: eventName, ...params });
+  }
+}

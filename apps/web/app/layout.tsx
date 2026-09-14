@@ -3,6 +3,7 @@ import { Fraunces, IBM_Plex_Sans } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import Footer from "./Footer";
+import GoogleAnalytics from "./GoogleAnalytics";
 
 const fraunces = Fraunces({
   variable: "--font-display",
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="beforeInteractive" />
+        <GoogleAnalytics />
         <div className="flex-1">{children}</div>
         <Footer />
       </body>

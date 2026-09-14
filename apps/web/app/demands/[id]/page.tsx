@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, trackEvent } from "../../lib/api";
 
 interface Demand {
   id: number;
@@ -96,7 +96,8 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
   async function handleAccept(bidId: number) {
     setError("");
     try {
-      await apiFetch(`/bids/${bidId}/accept`, { method: "POST" });
+      const order = await apiFetch(`/bids/${bidId}/accept`, { method: "POST" });
+      trackEvent("order_created", { value: order.amount });
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

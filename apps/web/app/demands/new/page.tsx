@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, trackEvent } from "../../lib/api";
 
 const DURATIONS = [1, 2, 3, 6, 12, 24];
 
@@ -35,6 +35,7 @@ export default function NewDemandPage() {
         }),
       });
 
+      trackEvent("post_demand", { category, budget: budget ? Number(budget) : undefined });
       router.push(`/demands/${demand.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
