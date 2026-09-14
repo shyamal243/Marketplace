@@ -305,6 +305,38 @@ app.post("/me/change-password", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+app.post("/me/availability", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "delivery") {
+      return res.status(403).json({ error: "Only delivery persons can set availability" });
+    }
+
+    const { isAvailable, latitude, longitude } = req.body;
+
+    const updateData: Record<string, unknown> = {
+      isAvailableForDelivery: Boolean(isAvailable),
+    };
+
+    if (latitude !== undefined) updateData.currentLatitude = latitude;
+    if (longitude !== undefined) updateData.currentLongitude = longitude;
+
+    const updated = await db.orm.public.User.where({ id: req.userId! }).update(updateData);
+
+    if (!updated) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({
+      isAvailableForDelivery: updated.isAvailableForDelivery,
+      currentLatitude: updated.currentLatitude,
+      currentLongitude: updated.currentLongitude,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.get("/demands/mine", requireAuth, async (req: AuthRequest, res) => {
   try {
     const demands = await db.orm.public.Demand.where({ buyerId: req.userId! }).all();
@@ -850,20 +882,61 @@ app.post("/orders/:id/ship", requireAuth, async (req: AuthRequest, res) => {
     }
 
     if (deliveryMode === "local") {
-      if (!deliveryPersonId) {
-        return res.status(400).json({ error: "deliveryPersonId is required for local delivery" });
+      let refLat: number | null = null;
+      let refLon: number | null = null;
+
+      if (order.storeId) {
+        const store = await db.orm.public.Store.where({ id: order.storeId }).first();
+        if (store?.latitude && store?.longitude) {
+          refLat = store.latitude;
+          refLon = store.longitude;
+        }
+      } else if (order.demandId) {
+        const demand = await db.orm.public.Demand.where({ id: order.demandId }).first();
+        if (demand?.deliveryLatitude && demand?.deliveryLongitude) {
+          refLat = demand.deliveryLatitude;
+          refLon = demand.deliveryLongitude;
+        }
       }
 
-      const deliveryPerson = await db.orm.public.User.where({ id: deliveryPersonId }).first();
+      const availablePeople = await db.orm.public.User.where({
+        role: "delivery",
+        isAvailableForDelivery: true,
+      }).all();
 
-      if (!deliveryPerson || deliveryPerson.role !== "delivery") {
-        return res.status(400).json({ error: "deliveryPersonId must belong to a user with role 'delivery'" });
+      if (availablePeople.length === 0) {
+        return res.status(400).json({ error: "No delivery persons are currently available. Try courier delivery instead." });
+      }
+
+      let chosenPerson = availablePeople[0]!;
+
+      if (refLat !== null && refLon !== null) {
+        const withDistance = availablePeople
+          .filter((p) => p.currentLatitude !== null && p.currentLongitude !== null)
+          .map((p) => {
+            const R = 6371;
+            const dLat = ((p.currentLatitude! - refLat!) * Math.PI) / 180;
+            const dLon = ((p.currentLongitude! - refLon!) * Math.PI) / 180;
+            const a =
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos((refLat! * Math.PI) / 180) *
+                Math.cos((p.currentLatitude! * Math.PI) / 180) *
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return { person: p, distanceKm: R * c };
+          })
+          .sort((a, b) => a.distanceKm - b.distanceKm);
+
+        if (withDistance.length > 0) {
+          chosenPerson = withDistance[0]!.person;
+        }
       }
 
       const updatedOrder = await db.transaction(async (tx) => {
         await tx.orm.public.DeliveryAssignment.create({
           orderId: order.id,
-          deliveryPersonId,
+          deliveryPersonId: chosenPerson.id,
         });
 
         return tx.orm.public.Order.where({ id: order.id }).update({
@@ -873,12 +946,12 @@ app.post("/orders/:id/ship", requireAuth, async (req: AuthRequest, res) => {
       });
 
       await db.orm.public.Notification.create({
-        message: `You've been assigned a local delivery for order #${order.id}`,
+        message: `You've been auto-assigned a local delivery for order #${order.id}`,
         type: "delivery_assigned",
-        userId: deliveryPersonId,
+        userId: chosenPerson.id,
       });
 
-      return res.status(200).json(updatedOrder);
+      return res.status(200).json({ ...updatedOrder, assignedTo: chosenPerson.name });
     }
 
     if (!trackingNumber || !courierName) {
