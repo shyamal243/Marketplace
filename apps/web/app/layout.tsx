@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Fraunces, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 
