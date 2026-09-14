@@ -13,8 +13,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          node-version: "24"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -29,4 +27,7 @@ jobs:
 
       - name: Run backend tests
         working-directory: apps/api
-        run: npx vitest run
+        run: |
+          VITEST_DIR=$(find ../../node_modules/.pnpm -maxdepth 1 -type d -name "vitest@*" | head -1)
+          echo "Found vitest at: $VITEST_DIR"
+          node "$VITEST_DIR/node_modules/vitest/vitest.mjs" run
