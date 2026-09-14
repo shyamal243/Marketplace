@@ -130,7 +130,7 @@ app.use(cors({
 }));
 app.use(helmet());
 app.use(express.json({ limit: "1mb" }));
-app.use("/uploads", express.static("uploads"));
+
 
 app.get("/", (req, res) => {
   res.send("Hello World from the backend!");
@@ -2080,6 +2080,28 @@ app.post("/kyc/upload", requireAuth, upload.single("document"), async (req: Auth
     });
 
     res.status(201).json(doc);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/kyc/file/:docId", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const docId = Number(req.params.docId);
+
+    const doc = await db.orm.public.KycDocument.where({ id: docId }).first();
+
+    if (!doc || !doc.fileUrl) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    if (doc.userId !== req.userId && req.userRole !== "admin") {
+      return res.status(403).json({ error: "You do not have permission to view this document" });
+    }
+
+    const filePath = doc.fileUrl.replace("/uploads/", "");
+    res.sendFile(filePath, { root: "uploads" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });

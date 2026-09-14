@@ -85,6 +85,21 @@ export default function AdminPage() {
     }
   }
 
+  async function handleViewFile(docId: number) {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:4000/kyc/file/${docId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Could not load file");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
   async function handleSetBookingFee(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -228,14 +243,12 @@ export default function AdminPage() {
                       <p className="mt-1 font-body text-xs text-indigo-border">Number: {d.documentNumber}</p>
                     )}
                     {d.fileUrl && (
-                      
-                        href={`http://localhost:4000${d.fileUrl}`}
-                        target="_blank"
-                        rel="noreferrer"
+                      <button
+                        onClick={() => handleViewFile(d.id)}
                         className="mt-1 inline-block font-body text-xs text-marigold underline"
                       >
                         View file
-                      </a>
+                      </button>
                     )}
                   </div>
                   <div className="flex gap-2">
