@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'3dee15e36b7a87816fa6d1b6863278f70329a7296240031ddd579887d3bf2729'>;
+  StorageHashBase<'3ea955b210e31e838371c729af2094f3bb84e342f1d6451320f40b32edffd1c0'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -283,6 +283,9 @@ export type FieldOutputTypes = {
       readonly id: CodecTypes['pg/int4@1']['output'];
       readonly title: CodecTypes['pg/text@1']['output'];
       readonly category: CodecTypes['pg/text@1']['output'] | null;
+      readonly deliveryAddress: CodecTypes['pg/text@1']['output'] | null;
+      readonly deliveryLatitude: CodecTypes['pg/float8@1']['output'] | null;
+      readonly deliveryLongitude: CodecTypes['pg/float8@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly budget: CodecTypes['pg/int4@1']['output'] | null;
       readonly hoursNeeded: CodecTypes['pg/int4@1']['output'] | null;
@@ -524,6 +527,9 @@ export type FieldInputTypes = {
       readonly id: CodecTypes['pg/int4@1']['input'];
       readonly title: CodecTypes['pg/text@1']['input'];
       readonly category: CodecTypes['pg/text@1']['input'] | null;
+      readonly deliveryAddress: CodecTypes['pg/text@1']['input'] | null;
+      readonly deliveryLatitude: CodecTypes['pg/float8@1']['input'] | null;
+      readonly deliveryLongitude: CodecTypes['pg/float8@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly budget: CodecTypes['pg/int4@1']['input'] | null;
       readonly hoursNeeded: CodecTypes['pg/int4@1']['input'] | null;
@@ -769,6 +775,9 @@ export type StorageColumnTypes = {
       readonly buyerId: CodecTypes['pg/int4@1']['output'];
       readonly category: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly deliveryAddress: CodecTypes['pg/text@1']['output'] | null;
+      readonly deliveryLatitude: CodecTypes['pg/float8@1']['output'] | null;
+      readonly deliveryLongitude: CodecTypes['pg/float8@1']['output'] | null;
       readonly description: CodecTypes['pg/text@1']['output'] | null;
       readonly hoursNeeded: CodecTypes['pg/int4@1']['output'] | null;
       readonly id: CodecTypes['pg/int4@1']['output'];
@@ -1010,6 +1019,9 @@ export type StorageColumnInputTypes = {
       readonly buyerId: CodecTypes['pg/int4@1']['input'];
       readonly category: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly deliveryAddress: CodecTypes['pg/text@1']['input'] | null;
+      readonly deliveryLatitude: CodecTypes['pg/float8@1']['input'] | null;
+      readonly deliveryLongitude: CodecTypes['pg/float8@1']['input'] | null;
       readonly description: CodecTypes['pg/text@1']['input'] | null;
       readonly hoursNeeded: CodecTypes['pg/int4@1']['input'] | null;
       readonly id: CodecTypes['pg/int4@1']['input'];
@@ -1611,6 +1623,21 @@ type ContractBase = Omit<
                 readonly category: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly deliveryAddress: {
+                  readonly nativeType: 'text';
+                  readonly codecId: 'pg/text@1';
+                  readonly nullable: true;
+                };
+                readonly deliveryLatitude: {
+                  readonly nativeType: 'float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                };
+                readonly deliveryLongitude: {
+                  readonly nativeType: 'float8';
+                  readonly codecId: 'pg/float8@1';
                   readonly nullable: true;
                 };
                 readonly description: {
@@ -3625,6 +3652,18 @@ type ContractBase = Omit<
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly deliveryAddress: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
+              };
+              readonly deliveryLatitude: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly deliveryLongitude: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
               readonly description: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -3711,6 +3750,9 @@ type ContractBase = Omit<
                 readonly id: { readonly column: 'id' };
                 readonly title: { readonly column: 'title' };
                 readonly category: { readonly column: 'category' };
+                readonly deliveryAddress: { readonly column: 'deliveryAddress' };
+                readonly deliveryLatitude: { readonly column: 'deliveryLatitude' };
+                readonly deliveryLongitude: { readonly column: 'deliveryLongitude' };
                 readonly description: { readonly column: 'description' };
                 readonly budget: { readonly column: 'budget' };
                 readonly hoursNeeded: { readonly column: 'hoursNeeded' };
