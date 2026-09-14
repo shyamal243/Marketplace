@@ -38,7 +38,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [deliveryMode, setDeliveryMode] = useState("courier");
-  const [deliveryPersonId, setDeliveryPersonId] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [courierName, setCourierName] = useState("");
   const [returnReason, setReturnReason] = useState("");
@@ -82,14 +81,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     try {
       const body: Record<string, unknown> =
         deliveryMode === "local"
-          ? { deliveryMode: "local", deliveryPersonId: Number(deliveryPersonId) }
+          ? { deliveryMode: "local" }
           : { deliveryMode: "courier", trackingNumber, courierName };
 
-      await apiFetch(`/orders/${id}/ship`, {
+      const result = await apiFetch(`/orders/${id}/ship`, {
         method: "POST",
         body: JSON.stringify(body),
       });
-      setMessage("Marked as shipped.");
+      setMessage(
+        result.assignedTo
+          ? `Shipped! Auto-assigned to ${result.assignedTo}.`
+          : "Marked as shipped."
+      );
       await loadOrder();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -284,14 +287,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </div>
 
             {deliveryMode === "local" ? (
-              <input
-                type="number"
-                required
-                value={deliveryPersonId}
-                onChange={(e) => setDeliveryPersonId(e.target.value)}
-                placeholder="Delivery person's user ID"
-                className="mt-4 w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
-              />
+              <p className="mt-4 font-body text-xs text-ink/60">
+                A nearby available delivery partner will be auto-assigned when you confirm.
+              </p>
             ) : (
               <div className="mt-4 flex flex-col gap-3">
                 <input

@@ -1,0 +1,128 @@
+[
+  {
+    "id": "column.public.user.currentLatitude",
+    "label": "Add column \"currentLatitude\" to \"user\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "currentLatitude",
+        "table": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"currentLatitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "currentLatitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"currentLatitude\"",
+        "sql": "ALTER TABLE \"public\".\"user\" ADD COLUMN \"currentLatitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"currentLatitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "currentLatitude"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.user.currentLongitude",
+    "label": "Add column \"currentLongitude\" to \"user\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "currentLongitude",
+        "table": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"currentLongitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "currentLongitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"currentLongitude\"",
+        "sql": "ALTER TABLE \"public\".\"user\" ADD COLUMN \"currentLongitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"currentLongitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "currentLongitude"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.user.isAvailableForDelivery",
+    "label": "Add column \"isAvailableForDelivery\" to \"user\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "isAvailableForDelivery",
+        "table": "user"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"isAvailableForDelivery\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "isAvailableForDelivery"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"isAvailableForDelivery\"",
+        "sql": "ALTER TABLE \"public\".\"user\" ADD COLUMN \"isAvailableForDelivery\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"isAvailableForDelivery\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "user",
+          "isAvailableForDelivery"
+        ]
+      }
+    ]
+  }
+]
