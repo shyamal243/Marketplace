@@ -1,38 +1,41 @@
 // use prisma-next
 model User {
-  id                   Int                  @id @default(autoincrement())
-  email                String               @unique
-  password             String
-  name                 String
-  phone                String?
-  address              String?
-  role                 String               @default("buyer") // "buyer", "seller", "admin", "delivery", "worker"
-  demands              Demand[]
-  bids                 Bid[]
-  ordersAsBuyer        Order[]              @relation("OrderBuyer")
-  ordersAsSeller       Order[]              @relation("OrderSeller")
-  reviewsGiven         Review[]             @relation("ReviewsGiven")
-  reviewsReceived      Review[]             @relation("ReviewsReceived")
-  notifications        Notification[]
-  walletBalance        Int                  @default(0)
-  walletTxns           WalletTransaction[]
-  stores               Store[]
-  productRatings       ProductRating[]
-  passwordResets       PasswordResetToken[]
-  deliveryAssignments  DeliveryAssignment[]
-  returnRequests       ReturnRequest[]
-  deliveryRatingsGiven DeliveryRating[]
-  tipsGiven            DeliveryTip[]        @relation("TipsGiven")
-  tipsReceived         DeliveryTip[]        @relation("TipsReceived")
-  kycDocuments         KycDocument[]
-  kycStatus            String               @default("not_submitted") // "not_submitted", "pending", "approved", "rejected"
-  favorites            Favorite[]
-  referralCode         String?              @unique
-  referredBy           Int?
-  referralRewarded     Boolean              @default(false)
+  id                     Int                  @id @default(autoincrement())
+  email                  String               @unique
+  password               String
+  name                   String
+  phone                  String?
+  address                String?
+  role                   String               @default("buyer") // "buyer", "seller", "admin", "delivery", "worker"
+  demands                Demand[]
+  bids                   Bid[]
+  ordersAsBuyer          Order[]              @relation("OrderBuyer")
+  ordersAsSeller         Order[]              @relation("OrderSeller")
+  reviewsGiven           Review[]             @relation("ReviewsGiven")
+  reviewsReceived        Review[]             @relation("ReviewsReceived")
+  notifications          Notification[]
+  walletBalance          Int                  @default(0)
+  walletTxns             WalletTransaction[]
+  stores                 Store[]
+  productRatings         ProductRating[]
+  passwordResets         PasswordResetToken[]
+  deliveryAssignments    DeliveryAssignment[]
+  returnRequests         ReturnRequest[]
+  deliveryRatingsGiven   DeliveryRating[]
+  tipsGiven              DeliveryTip[]        @relation("TipsGiven")
+  tipsReceived           DeliveryTip[]        @relation("TipsReceived")
+  kycDocuments           KycDocument[]
+  kycStatus              String               @default("not_submitted") // "not_submitted", "pending", "approved", "rejected"
+  isAvailableForDelivery Boolean              @default(false)
+  currentLatitude        Float?
+  currentLongitude       Float?
+  favorites              Favorite[]
+  referralCode           String?              @unique
+  referredBy             Int?
+  referralRewarded       Boolean              @default(false)
 
-  createdAt            TimestamptzString    @default(now())
-  updatedAt            TimestamptzString    @default(now())
+  createdAt              TimestamptzString    @default(now())
+  updatedAt              TimestamptzString    @default(now())
 }
 
 model Demand {

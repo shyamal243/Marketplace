@@ -2755,6 +2755,20 @@
                   "kind": "scalar"
                 }
               },
+              "currentLatitude": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "currentLongitude": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
               "email": {
                 "nullable": false,
                 "type": {
@@ -2766,6 +2780,13 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "isAvailableForDelivery": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
                   "kind": "scalar"
                 }
               },
@@ -3120,11 +3141,20 @@
                 "createdAt": {
                   "column": "createdAt"
                 },
+                "currentLatitude": {
+                  "column": "currentLatitude"
+                },
+                "currentLongitude": {
+                  "column": "currentLongitude"
+                },
                 "email": {
                   "column": "email"
                 },
                 "id": {
                   "column": "id"
+                },
+                "isAvailableForDelivery": {
+                  "column": "isAvailableForDelivery"
                 },
                 "kycStatus": {
                   "column": "kycStatus"
@@ -5519,6 +5549,16 @@
                   "nativeType": "timestamptz",
                   "nullable": false
                 },
+                "currentLatitude": {
+                  "codecId": "pg/float8@1",
+                  "nativeType": "float8",
+                  "nullable": true
+                },
+                "currentLongitude": {
+                  "codecId": "pg/float8@1",
+                  "nativeType": "float8",
+                  "nullable": true
+                },
                 "email": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
@@ -5531,6 +5571,15 @@
                     "kind": "function"
                   },
                   "nativeType": "int4",
+                  "nullable": false
+                },
+                "isAvailableForDelivery": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
                   "nullable": false
                 },
                 "kycStatus": {
@@ -5706,7 +5755,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "3f85f8eab2acfb2127e57e28ee0f78a9bccac442e18b13db9e5ac7beca9857c0"
+    "storageHash": "3dee15e36b7a87816fa6d1b6863278f70329a7296240031ddd579887d3bf2729"
   },
   "capabilities": {
     "postgres": {

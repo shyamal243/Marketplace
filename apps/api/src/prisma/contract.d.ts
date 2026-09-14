@@ -33,7 +33,7 @@ import type {
 } from '@prisma/orm-postgres/contract/types';
 
 export type StorageHash =
-  StorageHashBase<'3f85f8eab2acfb2127e57e28ee0f78a9bccac442e18b13db9e5ac7beca9857c0'>;
+  StorageHashBase<'3dee15e36b7a87816fa6d1b6863278f70329a7296240031ddd579887d3bf2729'>;
 export type ExecutionHash = ExecutionHashBase<string>;
 export type ProfileHash =
   ProfileHashBase<'3916f444a8a17ad749191acf9e08dad97d1a327b88c2f1d45d12f240296aa8b2'>;
@@ -460,6 +460,9 @@ export type FieldOutputTypes = {
       readonly role: CodecTypes['pg/text@1']['output'];
       readonly walletBalance: CodecTypes['pg/int4@1']['output'];
       readonly kycStatus: CodecTypes['pg/text@1']['output'];
+      readonly isAvailableForDelivery: CodecTypes['pg/bool@1']['output'];
+      readonly currentLatitude: CodecTypes['pg/float8@1']['output'] | null;
+      readonly currentLongitude: CodecTypes['pg/float8@1']['output'] | null;
       readonly referralCode: CodecTypes['pg/text@1']['output'] | null;
       readonly referredBy: CodecTypes['pg/int4@1']['output'] | null;
       readonly referralRewarded: CodecTypes['pg/bool@1']['output'];
@@ -698,6 +701,9 @@ export type FieldInputTypes = {
       readonly role: CodecTypes['pg/text@1']['input'];
       readonly walletBalance: CodecTypes['pg/int4@1']['input'];
       readonly kycStatus: CodecTypes['pg/text@1']['input'];
+      readonly isAvailableForDelivery: CodecTypes['pg/bool@1']['input'];
+      readonly currentLatitude: CodecTypes['pg/float8@1']['input'] | null;
+      readonly currentLongitude: CodecTypes['pg/float8@1']['input'] | null;
       readonly referralCode: CodecTypes['pg/text@1']['input'] | null;
       readonly referredBy: CodecTypes['pg/int4@1']['input'] | null;
       readonly referralRewarded: CodecTypes['pg/bool@1']['input'];
@@ -929,8 +935,11 @@ export type StorageColumnTypes = {
     readonly user: {
       readonly address: CodecTypes['pg/text@1']['output'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['output'];
+      readonly currentLatitude: CodecTypes['pg/float8@1']['output'] | null;
+      readonly currentLongitude: CodecTypes['pg/float8@1']['output'] | null;
       readonly email: CodecTypes['pg/text@1']['output'];
       readonly id: CodecTypes['pg/int4@1']['output'];
+      readonly isAvailableForDelivery: CodecTypes['pg/bool@1']['output'];
       readonly kycStatus: CodecTypes['pg/text@1']['output'];
       readonly name: CodecTypes['pg/text@1']['output'];
       readonly password: CodecTypes['pg/text@1']['output'];
@@ -1167,8 +1176,11 @@ export type StorageColumnInputTypes = {
     readonly user: {
       readonly address: CodecTypes['pg/text@1']['input'] | null;
       readonly createdAt: CodecTypes['pg/timestamptz-string@1']['input'];
+      readonly currentLatitude: CodecTypes['pg/float8@1']['input'] | null;
+      readonly currentLongitude: CodecTypes['pg/float8@1']['input'] | null;
       readonly email: CodecTypes['pg/text@1']['input'];
       readonly id: CodecTypes['pg/int4@1']['input'];
+      readonly isAvailableForDelivery: CodecTypes['pg/bool@1']['input'];
       readonly kycStatus: CodecTypes['pg/text@1']['input'];
       readonly name: CodecTypes['pg/text@1']['input'];
       readonly password: CodecTypes['pg/text@1']['input'];
@@ -3060,6 +3072,25 @@ type ContractBase = Omit<
                     readonly value: DefaultLiteralValue<'pg/text@1', 'not_submitted'>;
                   };
                 };
+                readonly isAvailableForDelivery: {
+                  readonly nativeType: 'bool';
+                  readonly codecId: 'pg/bool@1';
+                  readonly nullable: false;
+                  readonly default: {
+                    readonly kind: 'literal';
+                    readonly value: DefaultLiteralValue<'pg/bool@1', false>;
+                  };
+                };
+                readonly currentLatitude: {
+                  readonly nativeType: 'float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                };
+                readonly currentLongitude: {
+                  readonly nativeType: 'float8';
+                  readonly codecId: 'pg/float8@1';
+                  readonly nullable: true;
+                };
                 readonly referralCode: {
                   readonly nativeType: 'text';
                   readonly codecId: 'pg/text@1';
@@ -4941,6 +4972,18 @@ type ContractBase = Omit<
                 readonly nullable: false;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
               };
+              readonly isAvailableForDelivery: {
+                readonly nullable: false;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/bool@1' };
+              };
+              readonly currentLatitude: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
+              readonly currentLongitude: {
+                readonly nullable: true;
+                readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/float8@1' };
+              };
               readonly referralCode: {
                 readonly nullable: true;
                 readonly type: { readonly kind: 'scalar'; readonly codecId: 'pg/text@1' };
@@ -5178,6 +5221,9 @@ type ContractBase = Omit<
                 readonly role: { readonly column: 'role' };
                 readonly walletBalance: { readonly column: 'walletBalance' };
                 readonly kycStatus: { readonly column: 'kycStatus' };
+                readonly isAvailableForDelivery: { readonly column: 'isAvailableForDelivery' };
+                readonly currentLatitude: { readonly column: 'currentLatitude' };
+                readonly currentLongitude: { readonly column: 'currentLongitude' };
                 readonly referralCode: { readonly column: 'referralCode' };
                 readonly referredBy: { readonly column: 'referredBy' };
                 readonly referralRewarded: { readonly column: 'referralRewarded' };
