@@ -13,6 +13,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          node-version: "24"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -27,4 +29,4 @@ jobs:
 
       - name: Run backend tests
         working-directory: apps/api
-        run: node ../../node_modules/.pnpm/vitest@5.0.0_@types+node@22_d714a4acc628adca993634a8e3384f38/node_modules/vitest/vitest.mjs run
+        run: npx vitest run
