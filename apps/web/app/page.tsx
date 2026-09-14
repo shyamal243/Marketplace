@@ -87,6 +87,12 @@ export default function HomePage() {
                 Browse stores
               </Link>
               <Link
+                href="/reviews"
+                className="font-body text-sm text-indigo-border transition hover:text-paper"
+              >
+                Reviews
+              </Link>
+              <Link
                 href="/favorites"
                 className="font-body text-sm text-indigo-border transition hover:text-paper"
               >
