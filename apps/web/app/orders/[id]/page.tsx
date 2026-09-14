@@ -13,6 +13,14 @@ interface Order {
   orderType: string;
 }
 
+interface Tracking {
+  deliveryMode: string | null;
+  orderStatus: string;
+  deliveryStatus?: string | null;
+  courierName?: string;
+  trackingNumber?: string;
+}
+
 interface User {
   id: number;
   role: string;
@@ -21,6 +29,7 @@ interface User {
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [order, setOrder] = useState<Order | null>(null);
+  const [tracking, setTracking] = useState<Tracking | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -49,6 +58,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       const data = await apiFetch("/orders/mine");
       const found = [...data.asBuyer, ...data.asSeller].find((o: Order) => o.id === Number(id));
       setOrder(found ?? null);
+
+      if (found && (found.status === "shipped" || found.status === "delivered")) {
+        try {
+          const trackingData = await apiFetch(`/orders/${id}/tracking`);
+          setTracking(trackingData);
+        } catch {
+          setTracking(null);
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -212,6 +230,22 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <p className="mt-2 font-body text-sm text-indigo-border">
             Order #{order.id} · {order.isPaid ? "Paid" : "Payment pending"}
           </p>
+
+          {tracking && (
+            <div className="mt-4 rounded-md bg-indigo-deep/50 px-4 py-3">
+              <p className="font-body text-xs uppercase tracking-wide text-indigo-border">Tracking</p>
+              {tracking.deliveryMode === "courier" && (
+                <p className="mt-1 font-body text-sm text-paper">
+                  {tracking.courierName} · {tracking.trackingNumber}
+                </p>
+              )}
+              {tracking.deliveryMode === "local" && (
+                <p className="mt-1 font-body text-sm text-paper capitalize">
+                  {tracking.deliveryStatus?.replace(/_/g, " ")}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {error && (
