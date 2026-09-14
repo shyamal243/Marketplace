@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -51,11 +51,14 @@ export default function HomePage() {
         <span className="font-display text-xl font-semibold text-paper">Demand Board</span>
         <div className="flex items-center gap-4">
           {user ? (
-            <>            
+            <>
+              <Link
+                href="/orders"
+                className="font-body text-sm text-indigo-border transition hover:text-paper"
+              >
+                My orders
+              </Link>
               <span className="font-body text-sm text-indigo-border">
-              <span className="font-body text-sm text-indigo-border">
-              </span>
-<Link href="/orders" className="font-body text-sm text-indigo-border transition hover:text-paper">My orders</Link>
                 {user.name} · {user.role}
               </span>
               <button

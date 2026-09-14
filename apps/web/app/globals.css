@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 @theme {
   --color-indigo-deep: #14192e;
@@ -7,8 +7,8 @@
   --color-marigold: #e8a33d;
   --color-paper: #faf6ec;
   --color-ink: #1c1f2e;
-  --font-display: var(--font-display);
-  --font-body: var(--font-body);
+  --font-display: "Fraunces", serif;
+  --font-body: "IBM Plex Sans", sans-serif;
 }
 
 body {
