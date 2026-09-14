@@ -42,6 +42,9 @@ model Demand {
   id                 Int                @id @default(autoincrement())
   title              String
   category           String?
+  deliveryAddress    String?
+  deliveryLatitude   Float?
+  deliveryLongitude  Float?
   description        String?
   budget             Int?
   hoursNeeded        Int?
