@@ -53,6 +53,12 @@ export default function HomePage() {
           {user ? (
             <>
               <Link
+                href="/wallet"
+                className="font-body text-sm text-indigo-border transition hover:text-paper"
+              >
+                Wallet
+              </Link>
+              <Link
                 href="/orders"
                 className="font-body text-sm text-indigo-border transition hover:text-paper"
               >
