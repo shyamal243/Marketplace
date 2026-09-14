@@ -12,6 +12,7 @@ export default function NewDemandPage() {
   const [description, setDescription] = useState("");
   const [budget, setBudget] = useState("");
   const [category, setCategory] = useState("");
+  const [hoursNeeded, setHoursNeeded] = useState("");
   const [durationHours, setDurationHours] = useState(2);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,6 +30,7 @@ export default function NewDemandPage() {
           description: description || undefined,
           budget: budget ? Number(budget) : undefined,
           category: category || undefined,
+          hoursNeeded: hoursNeeded ? Number(hoursNeeded) : undefined,
           durationHours,
         }),
       });
@@ -62,7 +64,7 @@ export default function NewDemandPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="mt-1.5 w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
-              placeholder="e.g. Need 500 cotton t-shirts"
+              placeholder="e.g. Need 500 cotton t-shirts, or Need a maid"
             />
           </div>
 
@@ -76,7 +78,7 @@ export default function NewDemandPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="mt-1.5 w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
-              placeholder="Any details sellers should know"
+              placeholder="Any details sellers or workers should know"
             />
           </div>
 
@@ -109,6 +111,21 @@ export default function NewDemandPage() {
                 placeholder="e.g. clothing, cleaning, maid"
               />
             </div>
+          </div>
+
+          <div>
+            <label htmlFor="hoursNeeded" className="font-body text-sm font-medium text-ink">
+              Hours needed <span className="text-ink/50">(for hourly services like cleaning, massage, carpentry)</span>
+            </label>
+            <input
+              id="hoursNeeded"
+              type="number"
+              min={1}
+              value={hoursNeeded}
+              onChange={(e) => setHoursNeeded(e.target.value)}
+              className="mt-1.5 w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+              placeholder="e.g. 3"
+            />
           </div>
 
           <div>
