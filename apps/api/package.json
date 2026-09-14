@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "postinstall": "prisma skills sync || exit 0",
-    "contract:emit": "prisma contract emit"
+    "contract:emit": "prisma contract emit",
+    "test": "node ../../node_modules/.pnpm/vitest@5.0.0_@types+node@22_d714a4acc628adca993634a8e3384f38/node_modules/vitest/vitest.mjs run"
   },
   "keywords": [],
   "author": "",
@@ -35,6 +36,8 @@
     "@types/node": "^22.20.1",
     "prisma": "8.0.0-rc.13",
     "tsx": "^4.23.13",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.0"
   }
 }
