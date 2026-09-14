@@ -15,6 +15,7 @@ interface Order {
 
 interface User {
   id: number;
+  role: string;
 }
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -34,6 +35,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [returnReason, setReturnReason] = useState("");
   const [tipAmount, setTipAmount] = useState("");
   const [deliveryRating, setDeliveryRating] = useState(5);
+  const [returnRequestId, setReturnRequestId] = useState("");
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -167,6 +169,25 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  async function handleReturnDecision(decision: "approved" | "rejected") {
+    setActionLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      await apiFetch(`/returns/${returnRequestId}/decide`, {
+        method: "POST",
+        body: JSON.stringify({ decision }),
+      });
+      setMessage(`Return ${decision}.`);
+      setReturnRequestId("");
+      await loadOrder();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   if (loading) {
     return <div className="min-h-screen bg-indigo-deep px-8 py-12 text-paper md:px-16">Loading...</div>;
   }
@@ -276,6 +297,38 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           >
             Confirm delivery
           </button>
+        )}
+
+        {isSeller && (
+          <div className="mt-6 rounded-lg bg-paper p-6">
+            <h2 className="font-display text-lg font-semibold text-ink">Handle a return request</h2>
+            <p className="mt-1 font-body text-xs text-ink/60">
+              Check your notifications for the return request ID mentioned there.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <input
+                type="number"
+                value={returnRequestId}
+                onChange={(e) => setReturnRequestId(e.target.value)}
+                placeholder="Return request ID"
+                className="flex-1 rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+              />
+              <button
+                onClick={() => handleReturnDecision("approved")}
+                disabled={actionLoading || !returnRequestId}
+                className="rounded-md bg-marigold px-4 py-2 font-body text-sm font-medium text-indigo-deep transition hover:opacity-90 disabled:opacity-60"
+              >
+                Approve
+              </button>
+              <button
+                onClick={() => handleReturnDecision("rejected")}
+                disabled={actionLoading || !returnRequestId}
+                className="rounded-md border border-ink/20 px-4 py-2 font-body text-sm text-ink transition hover:border-red-400 disabled:opacity-60"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
         )}
 
         {isBuyer && order.status === "delivered" && (
