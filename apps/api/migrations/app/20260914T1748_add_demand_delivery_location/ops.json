@@ -1,0 +1,128 @@
+[
+  {
+    "id": "column.public.demand.deliveryAddress",
+    "label": "Add column \"deliveryAddress\" to \"demand\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "deliveryAddress",
+        "table": "demand"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"deliveryAddress\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "deliveryAddress"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"deliveryAddress\"",
+        "sql": "ALTER TABLE \"public\".\"demand\" ADD COLUMN \"deliveryAddress\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"deliveryAddress\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "deliveryAddress"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.demand.deliveryLatitude",
+    "label": "Add column \"deliveryLatitude\" to \"demand\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "deliveryLatitude",
+        "table": "demand"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"deliveryLatitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "deliveryLatitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"deliveryLatitude\"",
+        "sql": "ALTER TABLE \"public\".\"demand\" ADD COLUMN \"deliveryLatitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"deliveryLatitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "deliveryLatitude"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.demand.deliveryLongitude",
+    "label": "Add column \"deliveryLongitude\" to \"demand\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "deliveryLongitude",
+        "table": "demand"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"deliveryLongitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "deliveryLongitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"deliveryLongitude\"",
+        "sql": "ALTER TABLE \"public\".\"demand\" ADD COLUMN \"deliveryLongitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"deliveryLongitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "demand",
+          "deliveryLongitude"
+        ]
+      }
+    ]
+  }
+]
