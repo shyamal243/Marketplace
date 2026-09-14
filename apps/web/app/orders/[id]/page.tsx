@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, use } from "react";
 import { apiFetch } from "../../lib/api";
@@ -31,6 +31,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [deliveryPersonId, setDeliveryPersonId] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [courierName, setCourierName] = useState("");
+  const [returnReason, setReturnReason] = useState("");
+  const [tipAmount, setTipAmount] = useState("");
+  const [deliveryRating, setDeliveryRating] = useState(5);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -101,6 +104,62 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         body: JSON.stringify({ rating, comment: comment || undefined }),
       });
       setMessage("Review submitted, thank you!");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleReturnRequest(e: React.FormEvent) {
+    e.preventDefault();
+    setActionLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      await apiFetch(`/orders/${id}/return`, {
+        method: "POST",
+        body: JSON.stringify({ reason: returnReason }),
+      });
+      setMessage("Return requested. The seller will review it.");
+      setReturnReason("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleTip(e: React.FormEvent) {
+    e.preventDefault();
+    setActionLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      await apiFetch(`/deliveries/${id}/tip`, {
+        method: "POST",
+        body: JSON.stringify({ amount: Number(tipAmount) }),
+      });
+      setMessage("Tip sent!");
+      setTipAmount("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleDeliveryRating(e: React.FormEvent) {
+    e.preventDefault();
+    setActionLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      await apiFetch(`/deliveries/${id}/rate`, {
+        method: "POST",
+        body: JSON.stringify({ rating: deliveryRating }),
+      });
+      setMessage("Delivery rated, thanks!");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -220,37 +279,106 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {isBuyer && order.status === "delivered" && (
-          <form onSubmit={handleReview} className="mt-6 rounded-lg bg-paper p-6">
-            <h2 className="font-display text-lg font-semibold text-ink">Leave a review</h2>
-            <div className="mt-4 flex flex-col gap-4">
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setRating(n)}
-                    className={`text-2xl ${n <= rating ? "text-marigold" : "text-ink/20"}`}
-                  >
-                    ★
-                  </button>
-                ))}
+          <>
+            <form onSubmit={handleReview} className="mt-6 rounded-lg bg-paper p-6">
+              <h2 className="font-display text-lg font-semibold text-ink">Leave a review</h2>
+              <div className="mt-4 flex flex-col gap-4">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setRating(n)}
+                      className={`text-2xl ${n <= rating ? "text-marigold" : "text-ink/20"}`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  rows={2}
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="How was it? (optional)"
+                  className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+                />
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="rounded-md bg-indigo-deep px-4 py-2.5 font-body font-medium text-paper transition hover:bg-indigo-surface disabled:opacity-60"
+                >
+                  Submit review
+                </button>
               </div>
-              <textarea
-                rows={2}
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="How was it? (optional)"
-                className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
-              />
-              <button
-                type="submit"
-                disabled={actionLoading}
-                className="rounded-md bg-indigo-deep px-4 py-2.5 font-body font-medium text-paper transition hover:bg-indigo-surface disabled:opacity-60"
-              >
-                Submit review
-              </button>
-            </div>
-          </form>
+            </form>
+
+            <form onSubmit={handleDeliveryRating} className="mt-4 rounded-lg bg-paper p-6">
+              <h2 className="font-display text-lg font-semibold text-ink">Rate the delivery</h2>
+              <div className="mt-4 flex items-center gap-4">
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setDeliveryRating(n)}
+                      className={`text-2xl ${n <= deliveryRating ? "text-marigold" : "text-ink/20"}`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="rounded-md bg-indigo-deep px-4 py-2 font-body text-sm font-medium text-paper transition hover:bg-indigo-surface disabled:opacity-60"
+                >
+                  Rate
+                </button>
+              </div>
+            </form>
+
+            <form onSubmit={handleTip} className="mt-4 rounded-lg bg-paper p-6">
+              <h2 className="font-display text-lg font-semibold text-ink">Tip the delivery person</h2>
+              <div className="mt-4 flex gap-3">
+                <input
+                  type="number"
+                  min={1}
+                  value={tipAmount}
+                  onChange={(e) => setTipAmount(e.target.value)}
+                  placeholder="Amount (₹)"
+                  className="flex-1 rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+                />
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="rounded-md bg-indigo-deep px-4 py-2 font-body text-sm font-medium text-paper transition hover:bg-indigo-surface disabled:opacity-60"
+                >
+                  Send tip
+                </button>
+              </div>
+            </form>
+
+            <form onSubmit={handleReturnRequest} className="mt-4 rounded-lg bg-paper p-6">
+              <h2 className="font-display text-lg font-semibold text-ink">Request a return</h2>
+              <div className="mt-4 flex flex-col gap-3">
+                <textarea
+                  rows={2}
+                  required
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  placeholder="Why do you want to return this?"
+                  className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+                />
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="rounded-md border border-ink/20 px-4 py-2 font-body text-sm text-ink transition hover:border-marigold"
+                >
+                  Request return
+                </button>
+              </div>
+            </form>
+          </>
         )}
       </div>
     </div>
