@@ -61,6 +61,12 @@ export default function HomePage() {
                 </Link>
               )}
               <Link
+                href="/notifications"
+                className="font-body text-sm text-indigo-border transition hover:text-paper"
+              >
+                Notifications
+              </Link>
+              <Link
                 href="/wallet"
                 className="font-body text-sm text-indigo-border transition hover:text-paper"
               >
