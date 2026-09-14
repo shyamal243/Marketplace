@@ -86,9 +86,12 @@ export default function HomePage() {
               >
                 My orders
               </Link>
-              <span className="font-body text-sm text-indigo-border">
+              <Link
+                href="/profile"
+                className="font-body text-sm text-indigo-border transition hover:text-paper"
+              >
                 {user.name} · {user.role}
-              </span>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="rounded-md border border-indigo-border/60 px-3 py-1.5 font-body text-sm text-paper transition hover:border-marigold hover:text-marigold"
