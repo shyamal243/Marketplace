@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
+import Link from "next/link";
 import { apiFetch } from "../../lib/api";
 
 interface Product {
@@ -29,6 +30,7 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [cart, setCart] = useState<Record<number, number>>({});
+  const [favorited, setFavorited] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -104,12 +106,47 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
     }
   }
 
+  async function handleFavorite() {
+    setError("");
+    try {
+      await apiFetch("/favorites", {
+        method: "POST",
+        body: JSON.stringify({ storeId: Number(id) }),
+      });
+      setFavorited(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
   const isCustomer = user && user.role !== "seller";
+  const isOwner = user?.role === "seller";
 
   return (
     <div className="min-h-screen bg-indigo-deep px-8 py-12 md:px-16">
       <div className="mx-auto max-w-2xl">
-        <h1 className="font-display text-3xl font-semibold text-paper">Store #{id}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="font-display text-3xl font-semibold text-paper">Store #{id}</h1>
+          <div className="flex items-center gap-2">
+            {isOwner && (
+              <Link
+                href={`/stores/${id}/analytics`}
+                className="rounded-md border border-indigo-border/60 px-3 py-1.5 font-body text-sm text-paper transition hover:border-marigold hover:text-marigold"
+              >
+                Analytics
+              </Link>
+            )}
+            {user && (
+              <button
+                onClick={handleFavorite}
+                disabled={favorited}
+                className="rounded-md border border-marigold/50 px-3 py-1.5 font-body text-sm text-marigold transition hover:bg-marigold/10 disabled:opacity-60"
+              >
+                {favorited ? "Favorited" : "+ Favorite"}
+              </button>
+            )}
+          </div>
+        </div>
 
         {error && (
           <p className="mt-4 rounded-md bg-red-500/10 px-4 py-3 font-body text-sm text-red-300">{error}</p>

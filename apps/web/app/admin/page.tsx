@@ -23,10 +23,19 @@ interface Earnings {
   breakdownByType: Record<string, number>;
 }
 
+interface KycDoc {
+  id: number;
+  documentType: string;
+  documentNumber: string | null;
+  fileUrl: string | null;
+  userId: number;
+}
+
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [earnings, setEarnings] = useState<Earnings | null>(null);
+  const [pendingKyc, setPendingKyc] = useState<KycDoc[]>([]);
   const [bookingFee, setBookingFee] = useState("");
   const [commissionPercent, setCommissionPercent] = useState("");
   const [gstCategory, setGstCategory] = useState("");
@@ -34,7 +43,7 @@ export default function AdminPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"users" | "orders" | "settings">("users");
+  const [tab, setTab] = useState<"users" | "orders" | "kyc" | "settings">("users");
 
   useEffect(() => {
     loadAll();
@@ -44,18 +53,35 @@ export default function AdminPage() {
     setLoading(true);
     setError("");
     try {
-      const [usersData, ordersData, earningsData] = await Promise.all([
+      const [usersData, ordersData, earningsData, kycData] = await Promise.all([
         apiFetch("/admin/users"),
         apiFetch("/admin/orders"),
         apiFetch("/admin/earnings/platform?period=monthly"),
+        apiFetch("/admin/kyc/pending"),
       ]);
       setUsers(usersData);
       setOrders(ordersData);
       setEarnings(earningsData);
+      setPendingKyc(kycData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load — are you an admin?");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleKycDecision(docId: number, decision: "approved" | "rejected") {
+    setError("");
+    setMessage("");
+    try {
+      await apiFetch(`/admin/kyc/${docId}/decide`, {
+        method: "POST",
+        body: JSON.stringify({ decision }),
+      });
+      setMessage(`Document ${decision}.`);
+      setPendingKyc((prev) => prev.filter((d) => d.id !== docId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
     }
   }
 
@@ -141,7 +167,7 @@ export default function AdminPage() {
         )}
 
         <div className="mt-6 flex gap-2">
-          {(["users", "orders", "settings"] as const).map((t) => (
+          {(["users", "orders", "kyc", "settings"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -151,7 +177,7 @@ export default function AdminPage() {
                   : "border border-indigo-border/60 text-paper hover:border-marigold"
               }`}
             >
-              {t}
+              {t === "kyc" ? `KYC (${pendingKyc.length})` : t}
             </button>
           ))}
         </div>
@@ -181,6 +207,51 @@ export default function AdminPage() {
                   <span className="rounded-full border border-indigo-border px-2.5 py-0.5 font-body text-xs text-indigo-border">
                     {o.status}
                   </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === "kyc" && (
+          <div className="mt-6 flex flex-col gap-2">
+            {pendingKyc.length === 0 && (
+              <p className="font-body text-sm text-indigo-border">No pending KYC documents.</p>
+            )}
+            {pendingKyc.map((d) => (
+              <div key={d.id} className="rounded-lg bg-indigo-surface p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-body text-sm capitalize text-paper">{d.documentType.replace(/_/g, " ")}</p>
+                    <p className="font-body text-xs text-indigo-border">User #{d.userId}</p>
+                    {d.documentNumber && (
+                      <p className="mt-1 font-body text-xs text-indigo-border">Number: {d.documentNumber}</p>
+                    )}
+                    {d.fileUrl && (
+                      
+                        href={`http://localhost:4000${d.fileUrl}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 inline-block font-body text-xs text-marigold underline"
+                      >
+                        View file
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleKycDecision(d.id, "approved")}
+                      className="rounded-md bg-marigold px-3 py-1.5 font-body text-sm font-medium text-indigo-deep transition hover:opacity-90"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleKycDecision(d.id, "rejected")}
+                      className="rounded-md border border-indigo-border px-3 py-1.5 font-body text-sm text-paper transition hover:border-red-400 hover:text-red-300"
+                    >
+                      Reject
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
