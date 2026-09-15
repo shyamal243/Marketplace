@@ -1196,6 +1196,44 @@ app.post("/returns/:id/decide", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+app.get("/orders/:id/return", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId && order.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You are not part of this order" });
+    }
+
+    const returnRequest = await db.orm.public.ReturnRequest.where({ orderId }).first();
+
+    res.status(200).json(returnRequest ?? null);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/returns/for-seller", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const myOrders = await db.orm.public.Order.where({ sellerId: req.userId! }).all();
+    const orderIds = myOrders.map((o) => o.id);
+
+    const allReturns = await db.orm.public.ReturnRequest.where({ status: "requested" }).all();
+    const myPendingReturns = allReturns.filter((r) => orderIds.includes(r.orderId));
+
+    res.status(200).json(myPendingReturns);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/deliveries/:orderId/rate", requireAuth, async (req: AuthRequest, res) => {
   try {
     const orderId = Number(req.params.orderId);

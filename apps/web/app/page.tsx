@@ -98,6 +98,14 @@ export default function HomePage() {
               >
                 Favorites
               </Link>
+              {user.role === "seller" && (
+                <Link
+                  href="/returns"
+                  className="font-body text-sm text-indigo-border transition hover:text-paper"
+                >
+                  Returns
+                </Link>
+              )}
               {(user.role === "seller" || user.role === "delivery") && (
                 <Link
                   href="/kyc"

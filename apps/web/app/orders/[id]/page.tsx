@@ -21,15 +21,31 @@ interface Tracking {
   trackingNumber?: string;
 }
 
+interface ReturnRequest {
+  id: number;
+  status: string;
+  reason: string;
+}
+
 interface User {
   id: number;
   role: string;
 }
 
+const RETURN_REASONS = [
+  "Item damaged or defective",
+  "Item not as described",
+  "Wrong item received",
+  "No longer needed",
+  "Found a better price elsewhere",
+  "Other",
+];
+
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [order, setOrder] = useState<Order | null>(null);
   const [tracking, setTracking] = useState<Tracking | null>(null);
+  const [returnRequest, setReturnRequest] = useState<ReturnRequest | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -40,10 +56,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [deliveryMode, setDeliveryMode] = useState("courier");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [courierName, setCourierName] = useState("");
-  const [returnReason, setReturnReason] = useState("");
+  const [returnReason, setReturnReason] = useState(RETURN_REASONS[0]);
   const [tipAmount, setTipAmount] = useState("");
   const [deliveryRating, setDeliveryRating] = useState(5);
-  const [returnRequestId, setReturnRequestId] = useState("");
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -65,6 +80,13 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         } catch {
           setTracking(null);
         }
+      }
+
+      try {
+        const rr = await apiFetch(`/orders/${id}/return`);
+        setReturnRequest(rr);
+      } catch {
+        setReturnRequest(null);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
@@ -145,7 +167,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         body: JSON.stringify({ reason: returnReason }),
       });
       setMessage("Return requested. The seller will review it.");
-      setReturnReason("");
+      await loadOrder();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -183,25 +205,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         body: JSON.stringify({ rating: deliveryRating }),
       });
       setMessage("Delivery rated, thanks!");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-    } finally {
-      setActionLoading(false);
-    }
-  }
-
-  async function handleReturnDecision(decision: "approved" | "rejected") {
-    setActionLoading(true);
-    setError("");
-    setMessage("");
-    try {
-      await apiFetch(`/returns/${returnRequestId}/decide`, {
-        method: "POST",
-        body: JSON.stringify({ decision }),
-      });
-      setMessage(`Return ${decision}.`);
-      setReturnRequestId("");
-      await loadOrder();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -247,6 +250,15 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   {tracking.deliveryStatus?.replace(/_/g, " ")}
                 </p>
               )}
+            </div>
+          )}
+
+          {returnRequest && (
+            <div className="mt-4 rounded-md bg-marigold/10 px-4 py-3">
+              <p className="font-body text-xs uppercase tracking-wide text-marigold">Return status</p>
+              <p className="mt-1 font-body text-sm text-paper capitalize">
+                {returnRequest.status} · {returnRequest.reason}
+              </p>
             </div>
           )}
         </div>
@@ -331,38 +343,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </button>
         )}
 
-        {isSeller && (
-          <div className="mt-6 rounded-lg bg-paper p-6">
-            <h2 className="font-display text-lg font-semibold text-ink">Handle a return request</h2>
-            <p className="mt-1 font-body text-xs text-ink/60">
-              Check your notifications for the return request ID mentioned there.
-            </p>
-            <div className="mt-4 flex gap-2">
-              <input
-                type="number"
-                value={returnRequestId}
-                onChange={(e) => setReturnRequestId(e.target.value)}
-                placeholder="Return request ID"
-                className="flex-1 rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
-              />
-              <button
-                onClick={() => handleReturnDecision("approved")}
-                disabled={actionLoading || !returnRequestId}
-                className="rounded-md bg-marigold px-4 py-2 font-body text-sm font-medium text-indigo-deep transition hover:opacity-90 disabled:opacity-60"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => handleReturnDecision("rejected")}
-                disabled={actionLoading || !returnRequestId}
-                className="rounded-md border border-ink/20 px-4 py-2 font-body text-sm text-ink transition hover:border-red-400 disabled:opacity-60"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        )}
-
         {isBuyer && order.status === "delivered" && (
           <>
             <form onSubmit={handleReview} className="mt-6 rounded-lg bg-paper p-6">
@@ -443,26 +423,32 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </form>
 
-            <form onSubmit={handleReturnRequest} className="mt-4 rounded-lg bg-paper p-6">
-              <h2 className="font-display text-lg font-semibold text-ink">Request a return</h2>
-              <div className="mt-4 flex flex-col gap-3">
-                <textarea
-                  rows={2}
-                  required
-                  value={returnReason}
-                  onChange={(e) => setReturnReason(e.target.value)}
-                  placeholder="Why do you want to return this?"
-                  className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
-                />
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="rounded-md border border-ink/20 px-4 py-2 font-body text-sm text-ink transition hover:border-marigold"
-                >
-                  Request return
-                </button>
-              </div>
-            </form>
+            {!returnRequest && (
+              <form onSubmit={handleReturnRequest} className="mt-4 rounded-lg bg-paper p-6">
+                <h2 className="font-display text-lg font-semibold text-ink">Return or replace item</h2>
+                <div className="mt-4 flex flex-col gap-3">
+                  <label className="font-body text-sm text-ink/70">Reason for return</label>
+                  <select
+                    value={returnReason}
+                    onChange={(e) => setReturnReason(e.target.value)}
+                    className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+                  >
+                    {RETURN_REASONS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="submit"
+                    disabled={actionLoading}
+                    className="rounded-md border border-ink/20 px-4 py-2 font-body text-sm text-ink transition hover:border-marigold"
+                  >
+                    {actionLoading ? "Submitting..." : "Submit return request"}
+                  </button>
+                </div>
+              </form>
+            )}
           </>
         )}
       </div>
