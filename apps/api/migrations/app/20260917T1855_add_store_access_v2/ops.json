@@ -1,0 +1,203 @@
+[
+  {
+    "id": "table.storeAccess",
+    "label": "Create table \"storeAccess\"",
+    "summary": "Creates table \"storeAccess\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "storeAccess"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"storeAccess\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"storeAccess\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"storeAccess\"",
+        "sql": "CREATE TABLE \"public\".\"storeAccess\" (\n  \"assignedBySellerId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"storeId\" int4 NOT NULL,\n  \"userId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"storeAccess\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"storeAccess\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.storeAccess.storeAccess_storeId_idx_c545737d",
+    "label": "Create index \"storeAccess_storeId_idx_c545737d\" on \"storeAccess\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "storeAccess_storeId_idx_c545737d",
+        "table": "storeAccess"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"storeAccess_storeId_idx_c545737d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"storeAccess_storeId_idx_c545737d\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"storeAccess_storeId_idx_c545737d\"",
+        "sql": "CREATE INDEX \"storeAccess_storeId_idx_c545737d\" ON \"public\".\"storeAccess\" (\"storeId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"storeAccess_storeId_idx_c545737d\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"storeAccess_storeId_idx_c545737d\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.storeAccess.storeAccess_userId_idx_a489d58a",
+    "label": "Create index \"storeAccess_userId_idx_a489d58a\" on \"storeAccess\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "storeAccess_userId_idx_a489d58a",
+        "table": "storeAccess"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"storeAccess_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"storeAccess_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"storeAccess_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"storeAccess_userId_idx_a489d58a\" ON \"public\".\"storeAccess\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"storeAccess_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"storeAccess_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.storeAccess.storeAccess_storeId_fkey",
+    "label": "Add foreign key \"storeAccess_storeId_fkey\" on \"storeAccess\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "storeAccess_storeId_fkey",
+        "table": "storeAccess"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"storeAccess_storeId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "storeAccess_storeId_fkey",
+          "public",
+          "\"public\".\"storeAccess\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"storeAccess_storeId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"storeAccess\"\nADD CONSTRAINT \"storeAccess_storeId_fkey\"\nFOREIGN KEY (\"storeId\")\nREFERENCES \"public\".\"store\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"storeAccess_storeId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "storeAccess_storeId_fkey",
+          "public",
+          "\"public\".\"storeAccess\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.storeAccess.storeAccess_userId_fkey",
+    "label": "Add foreign key \"storeAccess_userId_fkey\" on \"storeAccess\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "storeAccess_userId_fkey",
+        "table": "storeAccess"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"storeAccess_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "storeAccess_userId_fkey",
+          "public",
+          "\"public\".\"storeAccess\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"storeAccess_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"storeAccess\"\nADD CONSTRAINT \"storeAccess_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"storeAccess_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "storeAccess_userId_fkey",
+          "public",
+          "\"public\".\"storeAccess\""
+        ]
+      }
+    ]
+  }
+]

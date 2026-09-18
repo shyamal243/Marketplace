@@ -1,0 +1,296 @@
+[
+  {
+    "id": "column.public.order.copies",
+    "label": "Add column \"copies\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "copies",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"copies\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "copies"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"copies\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"copies\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"copies\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "copies"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.isColorPrint",
+    "label": "Add column \"isColorPrint\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "isColorPrint",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"isColorPrint\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "isColorPrint"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"isColorPrint\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"isColorPrint\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"isColorPrint\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "isColorPrint"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.pages",
+    "label": "Add column \"pages\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "pages",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"pages\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pages"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"pages\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"pages\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"pages\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pages"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.printFilePath",
+    "label": "Add column \"printFilePath\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "printFilePath",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"printFilePath\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "printFilePath"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"printFilePath\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"printFilePath\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"printFilePath\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "printFilePath"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.store.offersPrintService",
+    "label": "Add column \"offersPrintService\" to \"store\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "offersPrintService",
+        "table": "store"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"offersPrintService\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "store",
+          "offersPrintService"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"offersPrintService\"",
+        "sql": "ALTER TABLE \"public\".\"store\" ADD COLUMN \"offersPrintService\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"offersPrintService\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "store",
+          "offersPrintService"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.store.printPricePerPageBw",
+    "label": "Add column \"printPricePerPageBw\" to \"store\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "printPricePerPageBw",
+        "table": "store"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"printPricePerPageBw\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "store",
+          "printPricePerPageBw"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"printPricePerPageBw\"",
+        "sql": "ALTER TABLE \"public\".\"store\" ADD COLUMN \"printPricePerPageBw\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"printPricePerPageBw\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "store",
+          "printPricePerPageBw"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.store.printPricePerPageColor",
+    "label": "Add column \"printPricePerPageColor\" to \"store\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "printPricePerPageColor",
+        "table": "store"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"printPricePerPageColor\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "store",
+          "printPricePerPageColor"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"printPricePerPageColor\"",
+        "sql": "ALTER TABLE \"public\".\"store\" ADD COLUMN \"printPricePerPageColor\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"printPricePerPageColor\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "store",
+          "printPricePerPageColor"
+        ]
+      }
+    ]
+  }
+]

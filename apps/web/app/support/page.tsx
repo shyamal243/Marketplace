@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 
@@ -29,28 +29,28 @@ export default function SupportPage() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen bg-indigo-deep px-8 py-12 md:px-16">
+    <div className="hex-grid-bg min-h-screen bg-rv-bg px-8 py-12 md:px-16">
       <div className="mx-auto max-w-xl">
-        <h1 className="font-display text-3xl font-semibold text-paper">Help &amp; support</h1>
-        <p className="mt-2 font-body text-sm text-indigo-border">
+        <h1 className="font-display text-3xl font-semibold text-rv-text">Help &amp; support</h1>
+        <p className="mt-2 font-body text-sm text-rv-text-dim">
           Can&apos;t find what you need? Email us at{" "}
-          <a href="mailto:support@demandboard.example" className="text-marigold underline">
+          <a href="mailto:support@demandboard.example" className="text-rv-cyan underline">
             support@demandboard.example
           </a>
         </p>
 
         <div className="mt-8 flex flex-col gap-2">
           {FAQS.map((item, i) => (
-            <div key={i} className="rounded-lg bg-indigo-surface">
+            <div key={i} className="glass-panel">
               <button
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
                 className="flex w-full items-center justify-between px-5 py-4 text-left"
               >
-                <span className="font-body text-sm text-paper">{item.q}</span>
-                <span className="font-body text-marigold">{openIndex === i ? "−" : "+"}</span>
+                <span className="font-body text-sm text-rv-text">{item.q}</span>
+                <span className="font-body text-rv-cyan">{openIndex === i ? "−" : "+"}</span>
               </button>
               {openIndex === i && (
-                <p className="px-5 pb-4 font-body text-sm text-indigo-border">{item.a}</p>
+                <p className="px-5 pb-4 font-body text-sm text-rv-text-dim">{item.a}</p>
               )}
             </div>
           ))}

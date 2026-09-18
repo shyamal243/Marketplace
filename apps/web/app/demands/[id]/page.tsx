@@ -180,46 +180,46 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
   }
 
   if (loading) {
-    return <div className="min-h-screen bg-indigo-deep px-8 py-12 text-paper md:px-16">Loading...</div>;
+    return <div className="min-h-screen bg-rv-bg px-8 py-12 text-rv-text md:px-16">Loading...</div>;
   }
 
   if (!demand) {
-    return <div className="min-h-screen bg-indigo-deep px-8 py-12 text-paper md:px-16">Demand not found.</div>;
+    return <div className="min-h-screen bg-rv-bg px-8 py-12 text-rv-text md:px-16">Demand not found.</div>;
   }
 
   const isOwner = user?.id === demand.buyerId;
-  const canBid = user && (user.role === "seller" || user.role === "worker") && demand.status === "open";
+  const canBid = user && (user.role === "seller" || user.role === "professional") && demand.status === "open";
 
   return (
-    <div className="min-h-screen bg-indigo-deep px-8 py-12 md:px-16">
+    <div className="hex-grid-bg min-h-screen bg-rv-bg px-8 py-12 md:px-16">
       <div className="mx-auto max-w-2xl">
-        <div className="rounded-lg bg-indigo-surface p-6 md:p-8">
+        <div className="glass-panel p-6 md:p-8">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="font-display text-2xl font-semibold text-paper">{demand.title}</h1>
+              <h1 className="font-display text-2xl font-semibold text-rv-text">{demand.title}</h1>
               {demand.category && (
-                <span className="mt-2 inline-block rounded-full bg-marigold/15 px-2.5 py-0.5 font-body text-xs text-marigold">
+                <span className="mt-2 inline-block rounded-full border border-rv-cyan/30 bg-rv-cyan/10 px-2.5 py-0.5 font-body text-xs text-rv-cyan">
                   {demand.category}
                 </span>
               )}
             </div>
-            <span className="whitespace-nowrap rounded-full border border-indigo-border px-3 py-1 font-body text-xs text-indigo-border">
+            <span className="whitespace-nowrap rounded-full border border-rv-border px-3 py-1 font-body text-xs text-rv-text-dim">
               {demand.status}
             </span>
           </div>
           {demand.description && (
-            <p className="mt-4 font-body text-sm leading-relaxed text-indigo-border">
+            <p className="mt-4 font-body text-sm leading-relaxed text-rv-text-dim">
               {demand.description}
             </p>
           )}
           {demand.budget && (
-            <p className="mt-4 font-display text-xl font-semibold text-marigold">₹{demand.budget}</p>
+            <p className="mt-4 font-display text-xl font-semibold text-rv-magenta">₹{demand.budget}</p>
           )}
 
           {isOwner && demand.status === "open" && bids.length === 0 && (
             <button
               onClick={handleCancel}
-              className="mt-4 rounded-md border border-red-400/50 px-4 py-2 font-body text-sm text-red-300 transition hover:bg-red-500/10"
+              className="mt-4 rounded-md border border-rv-danger/50 px-4 py-2 font-body text-sm text-rv-danger transition hover:bg-rv-danger/10"
             >
               Cancel demand &amp; refund booking fee
             </button>
@@ -227,27 +227,27 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
         </div>
 
         {error && (
-          <p className="mt-4 rounded-md bg-red-500/10 px-4 py-3 font-body text-sm text-red-300">
+          <p className="mt-4 rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-3 font-body text-sm text-rv-danger">
             {error}
           </p>
         )}
 
         {isOwner && demand.status === "pending_payment" && (
-          <div className="mt-6 rounded-lg bg-paper p-6">
-            <h2 className="font-display text-lg font-semibold text-ink">Pay booking fee</h2>
-            <p className="mt-1 font-body text-sm text-ink/70">
+          <div className="glass-panel mt-6 p-6">
+            <h2 className="font-display text-lg font-semibold text-rv-text">Pay booking fee</h2>
+            <p className="mt-1 font-body text-sm text-rv-text-dim">
               Your demand is posted but not yet visible to sellers until the fee is paid.
             </p>
             <div className="mt-4 flex gap-3">
               <button
                 onClick={handlePayFeeWallet}
-                className="rounded-md bg-indigo-deep px-4 py-2.5 font-body font-medium text-paper transition hover:bg-indigo-surface"
+                className="rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90"
               >
                 Pay from wallet
               </button>
               <button
                 onClick={handlePayFeeRazorpay}
-                className="rounded-md border border-ink/20 px-4 py-2.5 font-body font-medium text-ink transition hover:border-marigold"
+                className="rounded-md border border-rv-border px-4 py-2.5 font-body font-medium text-rv-text transition hover:hud-border hover:text-rv-cyan"
               >
                 Pay with Razorpay
               </button>
@@ -256,8 +256,8 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
         )}
 
         {canBid && (
-          <form onSubmit={handleBidSubmit} className="mt-6 rounded-lg bg-paper p-6">
-            <h2 className="font-display text-lg font-semibold text-ink">Submit a bid</h2>
+          <form onSubmit={handleBidSubmit} className="glass-panel mt-6 p-6">
+            <h2 className="font-display text-lg font-semibold text-rv-text">Submit a bid</h2>
             <div className="mt-4 flex flex-col gap-4">
               <input
                 type="number"
@@ -266,19 +266,19 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
                 value={bidAmount}
                 onChange={(e) => setBidAmount(e.target.value)}
                 placeholder="Your price (₹)"
-                className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+                className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
               />
               <textarea
                 rows={2}
                 value={bidMessage}
                 onChange={(e) => setBidMessage(e.target.value)}
                 placeholder="Message (optional)"
-                className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+                className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
               />
               <button
                 type="submit"
                 disabled={submitting}
-                className="rounded-md bg-indigo-deep px-4 py-2.5 font-body font-medium text-paper transition hover:bg-indigo-surface disabled:opacity-60"
+                className="rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
               >
                 {submitting ? "Submitting..." : "Submit bid"}
               </button>
@@ -288,33 +288,33 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
 
         {isOwner && (
           <div className="mt-6">
-            <h2 className="font-display text-lg font-semibold text-paper">Bids received</h2>
+            <h2 className="font-display text-lg font-semibold text-rv-text">Bids received</h2>
             {bids.length === 0 && (
-              <p className="mt-3 font-body text-sm text-indigo-border">No bids yet.</p>
+              <p className="mt-3 font-body text-sm text-rv-text-dim">No bids yet.</p>
             )}
             <div className="mt-3 flex flex-col gap-3">
               {bids.map((bid) => (
-                <div key={bid.id} className="rounded-lg bg-indigo-surface p-5">
+                <div key={bid.id} className="glass-panel p-5">
                   <div className="flex items-center justify-between">
-                    <span className="font-display text-lg font-semibold text-marigold">₹{bid.amount}</span>
-                    <span className="rounded-full border border-indigo-border px-2.5 py-0.5 font-body text-xs text-indigo-border">
+                    <span className="font-display text-lg font-semibold text-rv-magenta">₹{bid.amount}</span>
+                    <span className="rounded-full border border-rv-border px-2.5 py-0.5 font-body text-xs text-rv-text-dim">
                       {bid.status}
                     </span>
                   </div>
                   {bid.message && (
-                    <p className="mt-2 font-body text-sm text-indigo-border">{bid.message}</p>
+                    <p className="mt-2 font-body text-sm text-rv-text-dim">{bid.message}</p>
                   )}
                   {bid.status === "pending" && (
                     <div className="mt-4 flex gap-2">
                       <button
                         onClick={() => handleAccept(bid.id)}
-                        className="rounded-md bg-marigold px-3 py-1.5 font-body text-sm font-medium text-indigo-deep transition hover:opacity-90"
+                        className="rounded-md bg-rv-cyan px-3 py-1.5 font-body text-sm font-medium text-rv-bg shadow-hud-glow transition hover:opacity-90"
                       >
                         Accept
                       </button>
                       <button
                         onClick={() => handleReject(bid.id)}
-                        className="rounded-md border border-indigo-border px-3 py-1.5 font-body text-sm text-paper transition hover:border-red-400 hover:text-red-300"
+                        className="rounded-md border border-rv-border px-3 py-1.5 font-body text-sm text-rv-text transition hover:border-rv-danger hover:text-rv-danger"
                       >
                         Reject
                       </button>

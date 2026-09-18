@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -34,10 +34,10 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-indigo-deep px-8 py-12">
-      <div className="w-full max-w-sm rounded-lg bg-paper p-6 md:p-8">
-        <h1 className="font-display text-2xl font-semibold text-ink">Forgot password</h1>
-        <p className="mt-2 font-body text-sm text-ink/70">
+    <div className="hex-grid-bg flex min-h-screen items-center justify-center bg-rv-bg px-8 py-12">
+      <div className="glass-panel w-full max-w-sm p-6 md:p-8">
+        <h1 className="font-display text-2xl font-semibold text-rv-text">Forgot password</h1>
+        <p className="mt-2 font-body text-sm text-rv-text-dim">
           Enter your email and we&apos;ll help you reset your password.
         </p>
 
@@ -48,22 +48,22 @@ export default function ForgotPasswordPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+            className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
           />
 
           {error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 font-body text-sm text-red-700">{error}</p>
+            <p className="rounded-md bg-rv-danger/10 border border-rv-danger/30 px-3 py-2 font-body text-sm text-rv-danger">{error}</p>
           )}
           {message && (
-            <p className="rounded-md bg-marigold/10 px-3 py-2 font-body text-sm text-marigold">{message}</p>
+            <p className="rounded-md bg-rv-cyan/10 border border-rv-cyan/30 px-3 py-2 font-body text-sm text-rv-cyan">{message}</p>
           )}
           {devToken && (
-            <div className="rounded-md border border-ink/15 bg-white px-3 py-2">
-              <p className="font-body text-xs text-ink/60">
+            <div className="rounded-md border border-rv-border bg-rv-panel px-3 py-2">
+              <p className="font-body text-xs text-rv-text-dim">
                 (Dev mode — no email service configured yet. Your reset token:)
               </p>
-              <p className="mt-1 break-all font-mono text-xs text-ink">{devToken}</p>
-              <Link href="/reset-password" className="mt-2 inline-block font-body text-xs text-marigold underline">
+              <p className="mt-1 break-all font-mono text-xs text-rv-text">{devToken}</p>
+              <Link href="/reset-password" className="mt-2 inline-block font-body text-xs text-rv-cyan underline">
                 Go to reset page
               </Link>
             </div>
@@ -72,14 +72,14 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="rounded-md bg-indigo-deep px-4 py-2.5 font-body font-medium text-paper transition hover:bg-indigo-surface disabled:opacity-60"
+            className="rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
           >
             {loading ? "Sending..." : "Send reset link"}
           </button>
         </form>
 
-        <p className="mt-6 font-body text-sm text-ink/70">
-          <Link href="/login" className="text-marigold underline underline-offset-4">
+        <p className="mt-6 font-body text-sm text-rv-text-dim">
+          <Link href="/login" className="text-rv-cyan underline underline-offset-4">
             Back to login
           </Link>
         </p>

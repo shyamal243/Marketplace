@@ -1,0 +1,212 @@
+[
+  {
+    "id": "column.public.order.checkoutOtp",
+    "label": "Add column \"checkoutOtp\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "checkoutOtp",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"checkoutOtp\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "checkoutOtp"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"checkoutOtp\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"checkoutOtp\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"checkoutOtp\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "checkoutOtp"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.checkoutOtpVerifiedAt",
+    "label": "Add column \"checkoutOtpVerifiedAt\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "checkoutOtpVerifiedAt",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"checkoutOtpVerifiedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "checkoutOtpVerifiedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"checkoutOtpVerifiedAt\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"checkoutOtpVerifiedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"checkoutOtpVerifiedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "checkoutOtpVerifiedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.deliveryOtp",
+    "label": "Add column \"deliveryOtp\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "deliveryOtp",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"deliveryOtp\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "deliveryOtp"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"deliveryOtp\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"deliveryOtp\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"deliveryOtp\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "deliveryOtp"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.deliveryOtpVerifiedAt",
+    "label": "Add column \"deliveryOtpVerifiedAt\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "deliveryOtpVerifiedAt",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"deliveryOtpVerifiedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "deliveryOtpVerifiedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"deliveryOtpVerifiedAt\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"deliveryOtpVerifiedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"deliveryOtpVerifiedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "deliveryOtpVerifiedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.otpRequired",
+    "label": "Add column \"otpRequired\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "otpRequired",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"otpRequired\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "otpRequired"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"otpRequired\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"otpRequired\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"otpRequired\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "otpRequired"
+        ]
+      }
+    ]
+  }
+]

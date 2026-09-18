@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "../lib/api";
@@ -92,32 +92,32 @@ export default function WalletPage() {
   }
 
   return (
-    <div className="min-h-screen bg-indigo-deep px-8 py-12 md:px-16">
+    <div className="hex-grid-bg min-h-screen bg-rv-bg px-8 py-12 md:px-16">
       <div className="mx-auto max-w-xl">
-        <h1 className="font-display text-3xl font-semibold text-paper">Your wallet</h1>
+        <h1 className="font-display text-3xl font-semibold text-rv-text">Your wallet</h1>
 
         {loading ? (
-          <p className="mt-8 font-body text-indigo-border">Loading...</p>
+          <p className="mt-8 font-body text-rv-text-dim">Loading...</p>
         ) : (
           <>
-            <div className="mt-6 rounded-lg bg-indigo-surface p-6 md:p-8">
-              <p className="font-body text-sm text-indigo-border">Current balance</p>
-              <p className="mt-1 font-display text-4xl font-semibold text-marigold">₹{balance}</p>
+            <div className="hud-border glass-panel mt-6 p-6 md:p-8 hud-scanline">
+              <p className="font-body text-sm text-rv-text-dim">Current balance</p>
+              <p className="mt-1 font-display text-4xl font-semibold text-rv-cyan">â‚¹{balance}</p>
             </div>
 
             {error && (
-              <p className="mt-4 rounded-md bg-red-500/10 px-4 py-3 font-body text-sm text-red-300">
+              <p className="mt-4 rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-3 font-body text-sm text-rv-danger">
                 {error}
               </p>
             )}
             {message && (
-              <p className="mt-4 rounded-md bg-marigold/10 px-4 py-3 font-body text-sm text-marigold">
+              <p className="mt-4 rounded-md bg-rv-cyan/10 border border-rv-cyan/30 px-4 py-3 font-body text-sm text-rv-cyan">
                 {message}
               </p>
             )}
 
-            <form onSubmit={handleTopup} className="mt-6 rounded-lg bg-paper p-6">
-              <h2 className="font-display text-lg font-semibold text-ink">Add money</h2>
+            <form onSubmit={handleTopup} className="glass-panel mt-6 p-6">
+              <h2 className="font-display text-lg font-semibold text-rv-text">Add money</h2>
               <div className="mt-4 flex gap-3">
                 <input
                   type="number"
@@ -125,12 +125,12 @@ export default function WalletPage() {
                   required
                   value={topupAmount}
                   onChange={(e) => setTopupAmount(e.target.value)}
-                  placeholder="Amount (₹)"
-                  className="flex-1 rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+                  placeholder="Amount (â‚¹)"
+                  className="flex-1 rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
                 />
                 <button
                   type="submit"
-                  className="rounded-md bg-indigo-deep px-4 py-2.5 font-body font-medium text-paper transition hover:bg-indigo-surface"
+                  className="rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90"
                 >
                   Add via Razorpay
                 </button>
@@ -138,28 +138,28 @@ export default function WalletPage() {
             </form>
 
             <div className="mt-8">
-              <h2 className="font-display text-lg font-semibold text-paper">Transaction history</h2>
+              <h2 className="font-display text-lg font-semibold text-rv-text">Transaction history</h2>
               {transactions.length === 0 ? (
-                <p className="mt-3 font-body text-sm text-indigo-border">No transactions yet.</p>
+                <p className="mt-3 font-body text-sm text-rv-text-dim">No transactions yet.</p>
               ) : (
                 <div className="mt-3 flex flex-col gap-2">
                   {transactions.map((t) => (
                     <div
                       key={t.id}
-                      className="flex items-center justify-between rounded-lg border border-indigo-border/40 bg-indigo-surface px-5 py-3"
+                      className="glass-panel flex items-center justify-between px-5 py-3"
                     >
                       <div>
-                        <p className="font-body text-sm text-paper">{t.reason.replace(/_/g, " ")}</p>
-                        <p className="font-body text-xs text-indigo-border">
+                        <p className="font-body text-sm text-rv-text">{t.reason.replace(/_/g, " ")}</p>
+                        <p className="font-body text-xs text-rv-text-dim">
                           {new Date(t.createdAt).toLocaleDateString()}
                         </p>
                       </div>
                       <span
                         className={`font-display text-lg font-semibold ${
-                          t.type === "credit" ? "text-marigold" : "text-red-300"
+                          t.type === "credit" ? "text-rv-cyan" : "text-rv-danger"
                         }`}
                       >
-                        {t.type === "credit" ? "+" : "-"}₹{t.amount}
+                        {t.type === "credit" ? "+" : "-"}â‚¹{t.amount}
                       </span>
                     </div>
                   ))}

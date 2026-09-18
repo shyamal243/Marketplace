@@ -1,0 +1,920 @@
+[
+  {
+    "id": "table.professionalSkill",
+    "label": "Create table \"professionalSkill\"",
+    "summary": "Creates table \"professionalSkill\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "professionalSkill"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"professionalSkill\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"professionalSkill\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"professionalSkill\"",
+        "sql": "CREATE TABLE \"public\".\"professionalSkill\" (\n  \"category\" text,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"hourlyRate\" int4 NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"isActive\" bool DEFAULT true NOT NULL,\n  \"professionalId\" int4 NOT NULL,\n  \"skillName\" text NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"professionalSkill\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"professionalSkill\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.checkoutOtp",
+    "label": "Add column \"checkoutOtp\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "checkoutOtp",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"checkoutOtp\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "checkoutOtp"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"checkoutOtp\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"checkoutOtp\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"checkoutOtp\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "checkoutOtp"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.checkoutOtpVerifiedAt",
+    "label": "Add column \"checkoutOtpVerifiedAt\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "checkoutOtpVerifiedAt",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"checkoutOtpVerifiedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "checkoutOtpVerifiedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"checkoutOtpVerifiedAt\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"checkoutOtpVerifiedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"checkoutOtpVerifiedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "checkoutOtpVerifiedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.deliveryOtp",
+    "label": "Add column \"deliveryOtp\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "deliveryOtp",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"deliveryOtp\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "deliveryOtp"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"deliveryOtp\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"deliveryOtp\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"deliveryOtp\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "deliveryOtp"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.deliveryOtpVerifiedAt",
+    "label": "Add column \"deliveryOtpVerifiedAt\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "deliveryOtpVerifiedAt",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"deliveryOtpVerifiedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "deliveryOtpVerifiedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"deliveryOtpVerifiedAt\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"deliveryOtpVerifiedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"deliveryOtpVerifiedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "deliveryOtpVerifiedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.dropAddress",
+    "label": "Add column \"dropAddress\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "dropAddress",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"dropAddress\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropAddress"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"dropAddress\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"dropAddress\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"dropAddress\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropAddress"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.dropLatitude",
+    "label": "Add column \"dropLatitude\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "dropLatitude",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"dropLatitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropLatitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"dropLatitude\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"dropLatitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"dropLatitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropLatitude"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.dropLongitude",
+    "label": "Add column \"dropLongitude\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "dropLongitude",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"dropLongitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropLongitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"dropLongitude\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"dropLongitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"dropLongitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropLongitude"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.hoursBooked",
+    "label": "Add column \"hoursBooked\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "hoursBooked",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"hoursBooked\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "hoursBooked"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"hoursBooked\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"hoursBooked\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"hoursBooked\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "hoursBooked"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.otpRequired",
+    "label": "Add column \"otpRequired\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "otpRequired",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"otpRequired\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "otpRequired"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"otpRequired\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"otpRequired\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"otpRequired\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "otpRequired"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.pickupAddress",
+    "label": "Add column \"pickupAddress\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "pickupAddress",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"pickupAddress\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupAddress"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"pickupAddress\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"pickupAddress\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"pickupAddress\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupAddress"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.pickupLatitude",
+    "label": "Add column \"pickupLatitude\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "pickupLatitude",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"pickupLatitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupLatitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"pickupLatitude\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"pickupLatitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"pickupLatitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupLatitude"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.pickupLongitude",
+    "label": "Add column \"pickupLongitude\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "pickupLongitude",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"pickupLongitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupLongitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"pickupLongitude\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"pickupLongitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"pickupLongitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupLongitude"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.professionalSkillId",
+    "label": "Add column \"professionalSkillId\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "professionalSkillId",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"professionalSkillId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "professionalSkillId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"professionalSkillId\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"professionalSkillId\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"professionalSkillId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "professionalSkillId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.rideOtp",
+    "label": "Add column \"rideOtp\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "rideOtp",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"rideOtp\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rideOtp"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"rideOtp\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"rideOtp\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"rideOtp\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rideOtp"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.rideOtpVerifiedAt",
+    "label": "Add column \"rideOtpVerifiedAt\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "rideOtpVerifiedAt",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"rideOtpVerifiedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rideOtpVerifiedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"rideOtpVerifiedAt\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"rideOtpVerifiedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"rideOtpVerifiedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rideOtpVerifiedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.scheduleType",
+    "label": "Add column \"scheduleType\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "scheduleType",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"scheduleType\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "scheduleType"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"scheduleType\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"scheduleType\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"scheduleType\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "scheduleType"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.scheduledFor",
+    "label": "Add column \"scheduledFor\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "scheduledFor",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"scheduledFor\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "scheduledFor"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"scheduledFor\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"scheduledFor\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"scheduledFor\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "scheduledFor"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.vehicleType",
+    "label": "Add column \"vehicleType\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "vehicleType",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"vehicleType\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "vehicleType"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"vehicleType\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"vehicleType\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"vehicleType\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "vehicleType"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.product.category",
+    "label": "Add column \"category\" to \"product\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "category",
+        "table": "product"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"category\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "product",
+          "category"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"category\"",
+        "sql": "ALTER TABLE \"public\".\"product\" ADD COLUMN \"category\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"category\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "product",
+          "category"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.professionalSkill.professionalSkill_professionalId_idx_7628e7a5",
+    "label": "Create index \"professionalSkill_professionalId_idx_7628e7a5\" on \"professionalSkill\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "professionalSkill_professionalId_idx_7628e7a5",
+        "table": "professionalSkill"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"professionalSkill_professionalId_idx_7628e7a5\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"professionalSkill_professionalId_idx_7628e7a5\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"professionalSkill_professionalId_idx_7628e7a5\"",
+        "sql": "CREATE INDEX \"professionalSkill_professionalId_idx_7628e7a5\" ON \"public\".\"professionalSkill\" (\"professionalId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"professionalSkill_professionalId_idx_7628e7a5\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"professionalSkill_professionalId_idx_7628e7a5\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.professionalSkill.professionalSkill_professionalId_fkey",
+    "label": "Add foreign key \"professionalSkill_professionalId_fkey\" on \"professionalSkill\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "professionalSkill_professionalId_fkey",
+        "table": "professionalSkill"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"professionalSkill_professionalId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "professionalSkill_professionalId_fkey",
+          "public",
+          "\"public\".\"professionalSkill\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"professionalSkill_professionalId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"professionalSkill\"\nADD CONSTRAINT \"professionalSkill_professionalId_fkey\"\nFOREIGN KEY (\"professionalId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"professionalSkill_professionalId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "professionalSkill_professionalId_fkey",
+          "public",
+          "\"public\".\"professionalSkill\""
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,122 @@
+[
+  {
+    "id": "table.workerSkill",
+    "label": "Create table \"workerSkill\"",
+    "summary": "Creates table \"workerSkill\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "workerSkill"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"workerSkill\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"workerSkill\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"workerSkill\"",
+        "sql": "CREATE TABLE \"public\".\"workerSkill\" (\n  \"category\" text,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"hourlyRate\" int4 NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"isActive\" bool DEFAULT true NOT NULL,\n  \"skillName\" text NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"workerId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"workerSkill\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"workerSkill\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.workerSkill.workerSkill_workerId_idx_0b8f3a7c",
+    "label": "Create index \"workerSkill_workerId_idx_0b8f3a7c\" on \"workerSkill\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "workerSkill_workerId_idx_0b8f3a7c",
+        "table": "workerSkill"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"workerSkill_workerId_idx_0b8f3a7c\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"workerSkill_workerId_idx_0b8f3a7c\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"workerSkill_workerId_idx_0b8f3a7c\"",
+        "sql": "CREATE INDEX \"workerSkill_workerId_idx_0b8f3a7c\" ON \"public\".\"workerSkill\" (\"workerId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"workerSkill_workerId_idx_0b8f3a7c\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"workerSkill_workerId_idx_0b8f3a7c\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.workerSkill.workerSkill_workerId_fkey",
+    "label": "Add foreign key \"workerSkill_workerId_fkey\" on \"workerSkill\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "workerSkill_workerId_fkey",
+        "table": "workerSkill"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"workerSkill_workerId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "workerSkill_workerId_fkey",
+          "public",
+          "\"public\".\"workerSkill\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"workerSkill_workerId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"workerSkill\"\nADD CONSTRAINT \"workerSkill_workerId_fkey\"\nFOREIGN KEY (\"workerId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"workerSkill_workerId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "workerSkill_workerId_fkey",
+          "public",
+          "\"public\".\"workerSkill\""
+        ]
+      }
+    ]
+  }
+]

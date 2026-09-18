@@ -1,18 +1,55 @@
-﻿@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@theme {
-  --color-indigo-deep: #14192e;
-  --color-indigo-surface: #1f2440;
-  --color-indigo-border: #3a4066;
-  --color-marigold: #e8a33d;
-  --color-paper: #faf6ec;
-  --color-ink: #1c1f2e;
-  --font-display: "Fraunces", serif;
-  --font-body: "IBM Plex Sans", sans-serif;
+:root {
+  --rv-bg: #0a0e17;
+  --rv-cyan: #00f0ff;
+  --rv-magenta: #ff2ea6;
 }
 
 body {
-  background-color: var(--color-indigo-deep);
-  color: var(--color-paper);
-  font-family: var(--font-body);
+  background-color: var(--rv-bg);
+  color: #e6f1ff;
+  font-family: var(--font-plex), sans-serif;
+}
+
+@layer utilities {
+  .glass-panel {
+    background: rgba(19, 26, 43, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(0, 240, 255, 0.15);
+    border-radius: 0.75rem;
+  }
+
+  .hud-border {
+    border: 1px solid var(--rv-cyan);
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.4), 0 0 24px rgba(0, 240, 255, 0.15);
+  }
+
+  .hud-border-magenta {
+    border: 1px solid var(--rv-magenta);
+    box-shadow: 0 0 8px rgba(255, 46, 166, 0.4), 0 0 24px rgba(255, 46, 166, 0.15);
+  }
+
+  .hex-grid-bg {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 0L56 16.5V49.5L28 66L0 49.5V16.5Z' fill='none' stroke='%2300f0ff' stroke-opacity='0.06' stroke-width='1'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
+  .hud-scanline {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hud-scanline::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--rv-cyan), transparent);
+    animation: hud-scan 3s linear infinite;
+    pointer-events: none;
+  }
 }

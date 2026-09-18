@@ -1,0 +1,128 @@
+[
+  {
+    "id": "column.public.order.isFreight",
+    "label": "Add column \"isFreight\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "isFreight",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"isFreight\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "isFreight"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"isFreight\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"isFreight\" bool DEFAULT false NOT NULL"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"isFreight\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "isFreight"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.sizeCategory",
+    "label": "Add column \"sizeCategory\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "sizeCategory",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"sizeCategory\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "sizeCategory"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"sizeCategory\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"sizeCategory\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"sizeCategory\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "sizeCategory"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.weightKg",
+    "label": "Add column \"weightKg\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "weightKg",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"weightKg\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "weightKg"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"weightKg\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"weightKg\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"weightKg\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "weightKg"
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,159 @@
+[
+  {
+    "id": "dropTable.workerSkill",
+    "label": "Drop table \"workerSkill\"",
+    "operationClass": "destructive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "workerSkill"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"workerSkill\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"workerSkill\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "drop table \"workerSkill\"",
+        "sql": "DROP TABLE \"public\".\"workerSkill\""
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"workerSkill\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"workerSkill\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.professionalSkill",
+    "label": "Create table \"professionalSkill\"",
+    "summary": "Creates table \"professionalSkill\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "professionalSkill"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"professionalSkill\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"professionalSkill\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"professionalSkill\"",
+        "sql": "CREATE TABLE \"public\".\"professionalSkill\" (\n  \"category\" text,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"hourlyRate\" int4 NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"isActive\" bool DEFAULT true NOT NULL,\n  \"professionalId\" int4 NOT NULL,\n  \"skillName\" text NOT NULL,\n  \"updatedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"professionalSkill\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"professionalSkill\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.professionalSkill.professionalSkill_professionalId_idx_7628e7a5",
+    "label": "Create index \"professionalSkill_professionalId_idx_7628e7a5\" on \"professionalSkill\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "professionalSkill_professionalId_idx_7628e7a5",
+        "table": "professionalSkill"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"professionalSkill_professionalId_idx_7628e7a5\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"professionalSkill_professionalId_idx_7628e7a5\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"professionalSkill_professionalId_idx_7628e7a5\"",
+        "sql": "CREATE INDEX \"professionalSkill_professionalId_idx_7628e7a5\" ON \"public\".\"professionalSkill\" (\"professionalId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"professionalSkill_professionalId_idx_7628e7a5\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"professionalSkill_professionalId_idx_7628e7a5\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.professionalSkill.professionalSkill_professionalId_fkey",
+    "label": "Add foreign key \"professionalSkill_professionalId_fkey\" on \"professionalSkill\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "professionalSkill_professionalId_fkey",
+        "table": "professionalSkill"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"professionalSkill_professionalId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "professionalSkill_professionalId_fkey",
+          "public",
+          "\"public\".\"professionalSkill\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"professionalSkill_professionalId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"professionalSkill\"\nADD CONSTRAINT \"professionalSkill_professionalId_fkey\"\nFOREIGN KEY (\"professionalId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"professionalSkill_professionalId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "professionalSkill_professionalId_fkey",
+          "public",
+          "\"public\".\"professionalSkill\""
+        ]
+      }
+    ]
+  }
+]

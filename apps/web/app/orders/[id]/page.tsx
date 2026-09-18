@@ -11,6 +11,12 @@ interface Order {
   buyerId: number;
   sellerId: number;
   orderType: string;
+  otpRequired?: boolean;
+  checkoutOtpVerifiedAt?: string | null;
+  deliveryOtpVerifiedAt?: string | null;
+  scheduleType?: string | null;
+  scheduledFor?: string | null;
+  hoursBooked?: number | null;
 }
 
 interface Tracking {
@@ -60,6 +66,10 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   const [tipAmount, setTipAmount] = useState("");
   const [deliveryRating, setDeliveryRating] = useState(5);
 
+  const [checkoutOtpInput, setCheckoutOtpInput] = useState("");
+  const [deliveryOtpInput, setDeliveryOtpInput] = useState("");
+  const [otpError, setOtpError] = useState("");
+
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
@@ -95,6 +105,25 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  async function handleVerifyCheckoutOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setOtpError("");
+    setActionLoading(true);
+    try {
+      await apiFetch(`/orders/${id}/verify-checkout-otp`, {
+        method: "POST",
+        body: JSON.stringify({ otp: checkoutOtpInput }),
+      });
+      setCheckoutOtpInput("");
+      setMessage("Checkout verified! The seller can now ship your order.");
+      await loadOrder();
+    } catch (err) {
+      setOtpError(err instanceof Error ? err.message : "Incorrect OTP");
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   async function handleShip(e: React.FormEvent) {
     e.preventDefault();
     setActionLoading(true);
@@ -126,10 +155,35 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   async function handleDeliver() {
     setActionLoading(true);
     setError("");
+    setOtpError("");
     setMessage("");
     try {
-      await apiFetch(`/orders/${id}/deliver`, { method: "POST" });
+      await apiFetch(`/orders/${id}/deliver`, {
+        method: "POST",
+        body: JSON.stringify(order?.otpRequired ? { otp: deliveryOtpInput } : {}),
+      });
       setMessage("Marked as delivered.");
+      setDeliveryOtpInput("");
+      await loadOrder();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong";
+      if (order?.otpRequired) {
+        setOtpError(msg);
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function handleCompleteService() {
+    setActionLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      await apiFetch(`/orders/${id}/complete`, { method: "POST" });
+      setMessage("Booking marked as completed.");
       await loadOrder();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -213,40 +267,64 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   if (loading) {
-    return <div className="min-h-screen bg-indigo-deep px-8 py-12 text-paper md:px-16">Loading...</div>;
+    return <div className="min-h-screen bg-rv-bg px-8 py-12 text-rv-text md:px-16">Loading...</div>;
   }
 
   if (!order) {
-    return <div className="min-h-screen bg-indigo-deep px-8 py-12 text-paper md:px-16">Order not found.</div>;
+    return <div className="min-h-screen bg-rv-bg px-8 py-12 text-rv-text md:px-16">Order not found.</div>;
   }
 
   const isBuyer = user?.id === order.buyerId;
   const isSeller = user?.id === order.sellerId;
+  const isServiceBooking = order.orderType === "service_booking";
+  const needsCheckoutOtp = isBuyer && order.otpRequired && !order.checkoutOtpVerifiedAt;
+  const needsDeliveryOtp = isBuyer && order.otpRequired && !order.deliveryOtpVerifiedAt;
+  const canReview = isBuyer && (order.status === "delivered" || order.status === "completed");
 
   return (
-    <div className="min-h-screen bg-indigo-deep px-8 py-12 md:px-16">
+    <div className="hex-grid-bg min-h-screen bg-rv-bg px-8 py-12 md:px-16">
       <div className="mx-auto max-w-xl">
-        <div className="rounded-lg bg-indigo-surface p-6 md:p-8">
+        <div className="glass-panel p-6 md:p-8">
           <div className="flex items-center justify-between">
-            <span className="font-display text-2xl font-semibold text-marigold">₹{order.amount}</span>
-            <span className="rounded-full border border-indigo-border px-3 py-1 font-body text-xs text-indigo-border">
+            <span className="font-display text-2xl font-semibold text-rv-magenta">₹{order.amount}</span>
+            <span className="rounded-full border border-rv-border px-3 py-1 font-body text-xs text-rv-text-dim">
               {order.status}
             </span>
           </div>
-          <p className="mt-2 font-body text-sm text-indigo-border">
+          <p className="mt-2 font-body text-sm text-rv-text-dim">
             Order #{order.id} · {order.isPaid ? "Paid" : "Payment pending"}
           </p>
 
+          {isServiceBooking && (
+            <div className="mt-3 rounded-md border border-rv-border bg-rv-panel px-4 py-3">
+              <p className="font-body text-xs uppercase tracking-wide text-rv-text-dim">Booking details</p>
+              <p className="mt-1 font-body text-sm capitalize text-rv-text">
+                {order.scheduleType} · {order.hoursBooked}h
+              </p>
+              {order.scheduledFor && (
+                <p className="mt-1 font-body text-xs text-rv-text-dim">
+                  {new Date(order.scheduledFor).toLocaleString()}
+                </p>
+              )}
+            </div>
+          )}
+
+          {order.otpRequired && (
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-rv-magenta/40 bg-rv-magenta/10 px-3 py-1">
+              <span className="font-body text-xs text-rv-magenta">💎 Jewellery — OTP verification required</span>
+            </div>
+          )}
+
           {tracking && (
-            <div className="mt-4 rounded-md bg-indigo-deep/50 px-4 py-3">
-              <p className="font-body text-xs uppercase tracking-wide text-indigo-border">Tracking</p>
+            <div className="mt-4 rounded-md border border-rv-border bg-rv-panel px-4 py-3">
+              <p className="font-body text-xs uppercase tracking-wide text-rv-text-dim">Tracking</p>
               {tracking.deliveryMode === "courier" && (
-                <p className="mt-1 font-body text-sm text-paper">
+                <p className="mt-1 font-body text-sm text-rv-text">
                   {tracking.courierName} · {tracking.trackingNumber}
                 </p>
               )}
               {tracking.deliveryMode === "local" && (
-                <p className="mt-1 font-body text-sm text-paper capitalize">
+                <p className="mt-1 font-body text-sm text-rv-text capitalize">
                   {tracking.deliveryStatus?.replace(/_/g, " ")}
                 </p>
               )}
@@ -254,9 +332,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           )}
 
           {returnRequest && (
-            <div className="mt-4 rounded-md bg-marigold/10 px-4 py-3">
-              <p className="font-body text-xs uppercase tracking-wide text-marigold">Return status</p>
-              <p className="mt-1 font-body text-sm text-paper capitalize">
+            <div className="mt-4 rounded-md border border-rv-cyan/30 bg-rv-cyan/10 px-4 py-3">
+              <p className="font-body text-xs uppercase tracking-wide text-rv-cyan">Return status</p>
+              <p className="mt-1 font-body text-sm text-rv-text capitalize">
                 {returnRequest.status} · {returnRequest.reason}
               </p>
             </div>
@@ -264,23 +342,68 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {error && (
-          <p className="mt-4 rounded-md bg-red-500/10 px-4 py-3 font-body text-sm text-red-300">{error}</p>
+          <p className="mt-4 rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-3 font-body text-sm text-rv-danger">{error}</p>
         )}
         {message && (
-          <p className="mt-4 rounded-md bg-marigold/10 px-4 py-3 font-body text-sm text-marigold">{message}</p>
+          <p className="mt-4 rounded-md bg-rv-cyan/10 border border-rv-cyan/30 px-4 py-3 font-body text-sm text-rv-cyan">{message}</p>
         )}
 
-        {isSeller && order.status === "confirmed" && (
-          <form onSubmit={handleShip} className="mt-6 rounded-lg bg-paper p-6">
-            <h2 className="font-display text-lg font-semibold text-ink">Ship this order</h2>
+        {needsCheckoutOtp && (
+          <form onSubmit={handleVerifyCheckoutOtp} className="hud-border glass-panel mt-6 p-6">
+            <h2 className="font-display text-lg font-semibold text-rv-magenta">💎 Verify checkout OTP</h2>
+            <p className="mt-1 font-body text-sm text-rv-text-dim">
+              This is a high-value jewellery order. Enter the 6-digit code shown when you checked out to let the seller ship it.
+            </p>
+            <div className="mt-4 flex gap-3">
+              <input
+                type="text"
+                required
+                maxLength={6}
+                value={checkoutOtpInput}
+                onChange={(e) => setCheckoutOtpInput(e.target.value)}
+                placeholder="6-digit code"
+                className="flex-1 rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text tracking-widest outline-none focus:border-rv-magenta focus:shadow-hud-glow-magenta"
+              />
+              <button
+                type="submit"
+                disabled={actionLoading}
+                className="rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
+              >
+                {actionLoading ? "Verifying..." : "Verify"}
+              </button>
+            </div>
+            {otpError && (
+              <p className="mt-3 rounded-md bg-rv-danger/10 border border-rv-danger/30 px-3 py-2 font-body text-sm text-rv-danger">{otpError}</p>
+            )}
+          </form>
+        )}
+
+        {isSeller && isServiceBooking && order.status === "confirmed" && (
+          <button
+            onClick={handleCompleteService}
+            disabled={actionLoading}
+            className="mt-6 w-full rounded-md bg-rv-cyan px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow transition hover:opacity-90 disabled:opacity-60"
+          >
+            {actionLoading ? "Marking complete..." : "Mark booking as complete"}
+          </button>
+        )}
+
+        {isSeller && !isServiceBooking && order.status === "confirmed" && (
+          <form onSubmit={handleShip} className="glass-panel mt-6 p-6">
+            <h2 className="font-display text-lg font-semibold text-rv-text">Ship this order</h2>
+            {order.otpRequired && !order.checkoutOtpVerifiedAt && (
+              <p className="mt-1 font-body text-xs text-rv-magenta">
+                Waiting on the buyer to verify their checkout OTP before this can be shipped.
+              </p>
+            )}
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setDeliveryMode("local")}
                 className={`rounded-md border px-3 py-2 font-body text-sm transition ${
                   deliveryMode === "local"
-                    ? "border-marigold bg-marigold/10 text-ink"
-                    : "border-ink/15 bg-white text-ink/70 hover:border-ink/30"
+                    ? "border-rv-cyan bg-rv-cyan/10 text-rv-text shadow-hud-glow"
+                    : "border-rv-border bg-rv-panel text-rv-text-dim hover:border-rv-cyan/40"
                 }`}
               >
                 Local delivery
@@ -290,8 +413,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 onClick={() => setDeliveryMode("courier")}
                 className={`rounded-md border px-3 py-2 font-body text-sm transition ${
                   deliveryMode === "courier"
-                    ? "border-marigold bg-marigold/10 text-ink"
-                    : "border-ink/15 bg-white text-ink/70 hover:border-ink/30"
+                    ? "border-rv-cyan bg-rv-cyan/10 text-rv-text shadow-hud-glow"
+                    : "border-rv-border bg-rv-panel text-rv-text-dim hover:border-rv-cyan/40"
                 }`}
               >
                 Courier
@@ -299,7 +422,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </div>
 
             {deliveryMode === "local" ? (
-              <p className="mt-4 font-body text-xs text-ink/60">
+              <p className="mt-4 font-body text-xs text-rv-text-dim">
                 A nearby available delivery partner will be auto-assigned when you confirm.
               </p>
             ) : (
@@ -310,7 +433,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   value={courierName}
                   onChange={(e) => setCourierName(e.target.value)}
                   placeholder="Courier name (e.g. Delhivery)"
-                  className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+                  className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
                 />
                 <input
                   type="text"
@@ -318,7 +441,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
                   placeholder="Tracking number"
-                  className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+                  className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
                 />
               </div>
             )}
@@ -326,7 +449,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             <button
               type="submit"
               disabled={actionLoading}
-              className="mt-4 w-full rounded-md bg-indigo-deep px-4 py-2.5 font-body font-medium text-paper transition hover:bg-indigo-surface disabled:opacity-60"
+              className="mt-4 w-full rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
             >
               {actionLoading ? "Shipping..." : "Confirm shipment"}
             </button>
@@ -334,19 +457,39 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {isBuyer && order.status === "shipped" && (
-          <button
-            onClick={handleDeliver}
-            disabled={actionLoading}
-            className="mt-6 w-full rounded-md bg-marigold px-4 py-2.5 font-body font-medium text-indigo-deep transition hover:opacity-90 disabled:opacity-60"
-          >
-            Confirm delivery
-          </button>
+          <div className="mt-6">
+            {needsDeliveryOtp && (
+              <div className="hud-border glass-panel mb-3 p-4">
+                <p className="font-body text-sm text-rv-magenta">
+                  💎 Check your notifications for the delivery verification code, then enter it below to confirm you received your item.
+                </p>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={deliveryOtpInput}
+                  onChange={(e) => setDeliveryOtpInput(e.target.value)}
+                  placeholder="6-digit code"
+                  className="mt-3 w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text tracking-widest outline-none focus:border-rv-magenta focus:shadow-hud-glow-magenta"
+                />
+                {otpError && (
+                  <p className="mt-2 rounded-md bg-rv-danger/10 border border-rv-danger/30 px-3 py-2 font-body text-sm text-rv-danger">{otpError}</p>
+                )}
+              </div>
+            )}
+            <button
+              onClick={handleDeliver}
+              disabled={actionLoading}
+              className="w-full rounded-md bg-rv-cyan px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow transition hover:opacity-90 disabled:opacity-60"
+            >
+              {actionLoading ? "Confirming..." : "Confirm delivery"}
+            </button>
+          </div>
         )}
 
-        {isBuyer && order.status === "delivered" && (
+        {canReview && (
           <>
-            <form onSubmit={handleReview} className="mt-6 rounded-lg bg-paper p-6">
-              <h2 className="font-display text-lg font-semibold text-ink">Leave a review</h2>
+            <form onSubmit={handleReview} className="glass-panel mt-6 p-6">
+              <h2 className="font-display text-lg font-semibold text-rv-text">Leave a review</h2>
               <div className="mt-4 flex flex-col gap-4">
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((n) => (
@@ -354,7 +497,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                       key={n}
                       type="button"
                       onClick={() => setRating(n)}
-                      className={`text-2xl ${n <= rating ? "text-marigold" : "text-ink/20"}`}
+                      className={`text-2xl ${n <= rating ? "text-rv-magenta" : "text-rv-text-dim/30"}`}
                     >
                       ★
                     </button>
@@ -365,73 +508,77 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder="How was it? (optional)"
-                  className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+                  className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
                 />
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="rounded-md bg-indigo-deep px-4 py-2.5 font-body font-medium text-paper transition hover:bg-indigo-surface disabled:opacity-60"
+                  className="rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
                 >
                   Submit review
                 </button>
               </div>
             </form>
 
-            <form onSubmit={handleDeliveryRating} className="mt-4 rounded-lg bg-paper p-6">
-              <h2 className="font-display text-lg font-semibold text-ink">Rate the delivery</h2>
-              <div className="mt-4 flex items-center gap-4">
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => setDeliveryRating(n)}
-                      className={`text-2xl ${n <= deliveryRating ? "text-marigold" : "text-ink/20"}`}
-                    >
-                      ★
-                    </button>
-                  ))}
+            {!isServiceBooking && (
+              <form onSubmit={handleDeliveryRating} className="glass-panel mt-4 p-6">
+                <h2 className="font-display text-lg font-semibold text-rv-text">Rate the delivery</h2>
+                <div className="mt-4 flex items-center gap-4">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setDeliveryRating(n)}
+                        className={`text-2xl ${n <= deliveryRating ? "text-rv-magenta" : "text-rv-text-dim/30"}`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={actionLoading}
+                    className="rounded-md bg-rv-magenta px-4 py-2 font-body text-sm font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
+                  >
+                    Rate
+                  </button>
                 </div>
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="rounded-md bg-indigo-deep px-4 py-2 font-body text-sm font-medium text-paper transition hover:bg-indigo-surface disabled:opacity-60"
-                >
-                  Rate
-                </button>
-              </div>
-            </form>
+              </form>
+            )}
 
-            <form onSubmit={handleTip} className="mt-4 rounded-lg bg-paper p-6">
-              <h2 className="font-display text-lg font-semibold text-ink">Tip the delivery person</h2>
-              <div className="mt-4 flex gap-3">
-                <input
-                  type="number"
-                  min={1}
-                  value={tipAmount}
-                  onChange={(e) => setTipAmount(e.target.value)}
-                  placeholder="Amount (₹)"
-                  className="flex-1 rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
-                />
-                <button
-                  type="submit"
-                  disabled={actionLoading}
-                  className="rounded-md bg-indigo-deep px-4 py-2 font-body text-sm font-medium text-paper transition hover:bg-indigo-surface disabled:opacity-60"
-                >
-                  Send tip
-                </button>
-              </div>
-            </form>
+            {!isServiceBooking && (
+              <form onSubmit={handleTip} className="glass-panel mt-4 p-6">
+                <h2 className="font-display text-lg font-semibold text-rv-text">Tip the delivery person</h2>
+                <div className="mt-4 flex gap-3">
+                  <input
+                    type="number"
+                    min={1}
+                    value={tipAmount}
+                    onChange={(e) => setTipAmount(e.target.value)}
+                    placeholder="Amount (₹)"
+                    className="flex-1 rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                  />
+                  <button
+                    type="submit"
+                    disabled={actionLoading}
+                    className="rounded-md bg-rv-magenta px-4 py-2 font-body text-sm font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
+                  >
+                    Send tip
+                  </button>
+                </div>
+              </form>
+            )}
 
-            {!returnRequest && (
-              <form onSubmit={handleReturnRequest} className="mt-4 rounded-lg bg-paper p-6">
-                <h2 className="font-display text-lg font-semibold text-ink">Return or replace item</h2>
+            {!isServiceBooking && !returnRequest && (
+              <form onSubmit={handleReturnRequest} className="glass-panel mt-4 p-6">
+                <h2 className="font-display text-lg font-semibold text-rv-text">Return or replace item</h2>
                 <div className="mt-4 flex flex-col gap-3">
-                  <label className="font-body text-sm text-ink/70">Reason for return</label>
+                  <label className="font-body text-sm text-rv-text-dim">Reason for return</label>
                   <select
                     value={returnReason}
                     onChange={(e) => setReturnReason(e.target.value)}
-                    className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+                    className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
                   >
                     {RETURN_REASONS.map((r) => (
                       <option key={r} value={r}>
@@ -442,7 +589,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                   <button
                     type="submit"
                     disabled={actionLoading}
-                    className="rounded-md border border-ink/20 px-4 py-2 font-body text-sm text-ink transition hover:border-marigold"
+                    className="rounded-md border border-rv-border px-4 py-2 font-body text-sm text-rv-text transition hover:hud-border hover:text-rv-cyan"
                   >
                     {actionLoading ? "Submitting..." : "Submit return request"}
                   </button>

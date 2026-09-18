@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -53,49 +53,49 @@ export default function SellerReturnsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-indigo-deep px-8 py-12 md:px-16">
+    <div className="hex-grid-bg min-h-screen bg-rv-bg px-8 py-12 md:px-16">
       <div className="mx-auto max-w-xl">
-        <h1 className="font-display text-3xl font-semibold text-paper">Return requests</h1>
-        <p className="mt-2 font-body text-sm text-indigo-border">
+        <h1 className="font-display text-3xl font-semibold text-rv-text">Return requests</h1>
+        <p className="mt-2 font-body text-sm text-rv-text-dim">
           Review and decide on returns for your orders.
         </p>
 
-        {loading && <p className="mt-8 font-body text-indigo-border">Loading...</p>}
+        {loading && <p className="mt-8 font-body text-rv-text-dim">Loading...</p>}
         {error && (
-          <p className="mt-4 rounded-md bg-red-500/10 px-4 py-3 font-body text-sm text-red-300">{error}</p>
+          <p className="mt-4 rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-3 font-body text-sm text-rv-danger">{error}</p>
         )}
         {message && (
-          <p className="mt-4 rounded-md bg-marigold/10 px-4 py-3 font-body text-sm text-marigold">{message}</p>
+          <p className="mt-4 rounded-md bg-rv-cyan/10 border border-rv-cyan/30 px-4 py-3 font-body text-sm text-rv-cyan">{message}</p>
         )}
 
         {!loading && returns.length === 0 && (
-          <p className="mt-8 font-body text-sm text-indigo-border">No pending return requests.</p>
+          <p className="mt-8 font-body text-sm text-rv-text-dim">No pending return requests.</p>
         )}
 
         <div className="mt-8 flex flex-col gap-3">
           {returns.map((r) => (
-            <div key={r.id} className="rounded-lg bg-indigo-surface p-5">
+            <div key={r.id} className="glass-panel p-5">
               <div className="flex items-center justify-between">
-                <Link href={`/orders/${r.orderId}`} className="font-body text-sm text-marigold underline">
+                <Link href={`/orders/${r.orderId}`} className="font-body text-sm text-rv-cyan underline">
                   Order #{r.orderId}
                 </Link>
-                <span className="rounded-full border border-indigo-border px-2.5 py-0.5 font-body text-xs text-indigo-border">
+                <span className="rounded-full border border-rv-border px-2.5 py-0.5 font-body text-xs text-rv-text-dim">
                   {r.status}
                 </span>
               </div>
-              <p className="mt-2 font-body text-sm text-paper">{r.reason}</p>
+              <p className="mt-2 font-body text-sm text-rv-text">{r.reason}</p>
               <div className="mt-4 flex gap-2">
                 <button
                   onClick={() => handleDecision(r.id, "approved")}
                   disabled={actionLoading === r.id}
-                  className="rounded-md bg-marigold px-3 py-1.5 font-body text-sm font-medium text-indigo-deep transition hover:opacity-90 disabled:opacity-60"
+                  className="rounded-md bg-rv-cyan px-3 py-1.5 font-body text-sm font-medium text-rv-bg shadow-hud-glow transition hover:opacity-90 disabled:opacity-60"
                 >
                   Approve
                 </button>
                 <button
                   onClick={() => handleDecision(r.id, "rejected")}
                   disabled={actionLoading === r.id}
-                  className="rounded-md border border-indigo-border px-3 py-1.5 font-body text-sm text-paper transition hover:border-red-400 hover:text-red-300 disabled:opacity-60"
+                  className="rounded-md border border-rv-border px-3 py-1.5 font-body text-sm text-rv-text transition hover:border-rv-danger hover:text-rv-danger disabled:opacity-60"
                 >
                   Reject
                 </button>

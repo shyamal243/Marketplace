@@ -80,6 +80,10 @@
       "model": "ProductRating",
       "namespace": "public"
     },
+    "professionalSkill": {
+      "model": "ProfessionalSkill",
+      "namespace": "public"
+    },
     "razorpayOrderMapping": {
       "model": "RazorpayOrderMapping",
       "namespace": "public"
@@ -94,6 +98,14 @@
     },
     "store": {
       "model": "Store",
+      "namespace": "public"
+    },
+    "storeAccess": {
+      "model": "StoreAccess",
+      "namespace": "public"
+    },
+    "task": {
+      "model": "Task",
       "namespace": "public"
     },
     "user": {
@@ -1322,7 +1334,28 @@
                   "kind": "scalar"
                 }
               },
+              "checkoutOtp": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "checkoutOtpVerifiedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "commissionAmount": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "copies": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/int4@1",
@@ -1357,10 +1390,45 @@
                   "kind": "scalar"
                 }
               },
+              "deliveryOtp": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "deliveryOtpVerifiedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "demandId": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "dropAddress": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "dropLatitude": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "dropLongitude": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
                   "kind": "scalar"
                 }
               },
@@ -1385,10 +1453,31 @@
                   "kind": "scalar"
                 }
               },
+              "hoursBooked": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "id": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "isColorPrint": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "isFreight": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
                   "kind": "scalar"
                 }
               },
@@ -1406,10 +1495,129 @@
                   "kind": "scalar"
                 }
               },
+              "otpRequired": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "pages": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "pickupAddress": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "pickupLatitude": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "pickupLongitude": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
+                  "kind": "scalar"
+                }
+              },
+              "printFilePath": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "professionalSkillId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "rentalEndOtp": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "rentalEndOtpVerifiedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "rentalHours": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "rentalStartOtp": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "rentalStartOtpVerifiedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "rideOtp": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "rideOtpVerifiedAt": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "scheduleType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "scheduledFor": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
               "sellerId": {
                 "nullable": false,
                 "type": {
                   "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "sizeCategory": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
                   "kind": "scalar"
                 }
               },
@@ -1438,6 +1646,20 @@
                 "nullable": false,
                 "type": {
                   "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "vehicleType": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "weightKg": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/float8@1",
                   "kind": "scalar"
                 }
               }
@@ -1605,8 +1827,17 @@
                 "buyerId": {
                   "column": "buyerId"
                 },
+                "checkoutOtp": {
+                  "column": "checkoutOtp"
+                },
+                "checkoutOtpVerifiedAt": {
+                  "column": "checkoutOtpVerifiedAt"
+                },
                 "commissionAmount": {
                   "column": "commissionAmount"
+                },
+                "copies": {
+                  "column": "copies"
                 },
                 "courierName": {
                   "column": "courierName"
@@ -1620,8 +1851,23 @@
                 "deliveryMode": {
                   "column": "deliveryMode"
                 },
+                "deliveryOtp": {
+                  "column": "deliveryOtp"
+                },
+                "deliveryOtpVerifiedAt": {
+                  "column": "deliveryOtpVerifiedAt"
+                },
                 "demandId": {
                   "column": "demandId"
+                },
+                "dropAddress": {
+                  "column": "dropAddress"
+                },
+                "dropLatitude": {
+                  "column": "dropLatitude"
+                },
+                "dropLongitude": {
+                  "column": "dropLongitude"
                 },
                 "gstAmount": {
                   "column": "gstAmount"
@@ -1632,8 +1878,17 @@
                 "gstRatePercent": {
                   "column": "gstRatePercent"
                 },
+                "hoursBooked": {
+                  "column": "hoursBooked"
+                },
                 "id": {
                   "column": "id"
+                },
+                "isColorPrint": {
+                  "column": "isColorPrint"
+                },
+                "isFreight": {
+                  "column": "isFreight"
                 },
                 "isPaid": {
                   "column": "isPaid"
@@ -1641,8 +1896,59 @@
                 "orderType": {
                   "column": "orderType"
                 },
+                "otpRequired": {
+                  "column": "otpRequired"
+                },
+                "pages": {
+                  "column": "pages"
+                },
+                "pickupAddress": {
+                  "column": "pickupAddress"
+                },
+                "pickupLatitude": {
+                  "column": "pickupLatitude"
+                },
+                "pickupLongitude": {
+                  "column": "pickupLongitude"
+                },
+                "printFilePath": {
+                  "column": "printFilePath"
+                },
+                "professionalSkillId": {
+                  "column": "professionalSkillId"
+                },
+                "rentalEndOtp": {
+                  "column": "rentalEndOtp"
+                },
+                "rentalEndOtpVerifiedAt": {
+                  "column": "rentalEndOtpVerifiedAt"
+                },
+                "rentalHours": {
+                  "column": "rentalHours"
+                },
+                "rentalStartOtp": {
+                  "column": "rentalStartOtp"
+                },
+                "rentalStartOtpVerifiedAt": {
+                  "column": "rentalStartOtpVerifiedAt"
+                },
+                "rideOtp": {
+                  "column": "rideOtp"
+                },
+                "rideOtpVerifiedAt": {
+                  "column": "rideOtpVerifiedAt"
+                },
+                "scheduleType": {
+                  "column": "scheduleType"
+                },
+                "scheduledFor": {
+                  "column": "scheduledFor"
+                },
                 "sellerId": {
                   "column": "sellerId"
+                },
+                "sizeCategory": {
+                  "column": "sizeCategory"
                 },
                 "status": {
                   "column": "status"
@@ -1655,6 +1961,12 @@
                 },
                 "updatedAt": {
                   "column": "updatedAt"
+                },
+                "vehicleType": {
+                  "column": "vehicleType"
+                },
+                "weightKg": {
+                  "column": "weightKg"
                 }
               },
               "namespaceId": "public",
@@ -1995,6 +2307,13 @@
           },
           "Product": {
             "fields": {
+              "category": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "createdAt": {
                 "nullable": false,
                 "type": {
@@ -2123,6 +2442,9 @@
             },
             "storage": {
               "fields": {
+                "category": {
+                  "column": "category"
+                },
                 "createdAt": {
                   "column": "createdAt"
                 },
@@ -2255,6 +2577,113 @@
               },
               "namespaceId": "public",
               "table": "productRating"
+            }
+          },
+          "ProfessionalSkill": {
+            "fields": {
+              "category": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "hourlyRate": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "isActive": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "professionalId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "skillName": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "professional": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "professionalId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "category": {
+                  "column": "category"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "hourlyRate": {
+                  "column": "hourlyRate"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "isActive": {
+                  "column": "isActive"
+                },
+                "professionalId": {
+                  "column": "professionalId"
+                },
+                "skillName": {
+                  "column": "skillName"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "professionalSkill"
             }
           },
           "RazorpayOrderMapping": {
@@ -2652,6 +3081,27 @@
                   "kind": "scalar"
                 }
               },
+              "offersPrintService": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/bool@1",
+                  "kind": "scalar"
+                }
+              },
+              "printPricePerPageBw": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "printPricePerPageColor": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
               "sellerId": {
                 "nullable": false,
                 "type": {
@@ -2727,6 +3177,21 @@
                   "model": "User",
                   "namespace": "public"
                 }
+              },
+              "storeAccesses": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "storeId"
+                  ]
+                },
+                "to": {
+                  "model": "StoreAccess",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -2758,6 +3223,15 @@
                 "name": {
                   "column": "name"
                 },
+                "offersPrintService": {
+                  "column": "offersPrintService"
+                },
+                "printPricePerPageBw": {
+                  "column": "printPricePerPageBw"
+                },
+                "printPricePerPageColor": {
+                  "column": "printPricePerPageColor"
+                },
                 "sellerId": {
                   "column": "sellerId"
                 },
@@ -2769,9 +3243,260 @@
               "table": "store"
             }
           },
+          "StoreAccess": {
+            "fields": {
+              "assignedBySellerId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "storeId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "userId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "coSupplier": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "userId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "store": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "storeId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "Store",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "assignedBySellerId": {
+                  "column": "assignedBySellerId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "storeId": {
+                  "column": "storeId"
+                },
+                "userId": {
+                  "column": "userId"
+                }
+              },
+              "namespaceId": "public",
+              "table": "storeAccess"
+            }
+          },
+          "Task": {
+            "fields": {
+              "assignedToId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              },
+              "createdByAdminId": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "description": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "id": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "notes": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "relatedUserId": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/int4@1",
+                  "kind": "scalar"
+                }
+              },
+              "status": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "taskType": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "title": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "updatedAt": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "kind": "scalar"
+                }
+              }
+            },
+            "relations": {
+              "assignedTo": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "assignedToId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "createdByAdmin": {
+                "cardinality": "N:1",
+                "on": {
+                  "localFields": [
+                    "createdByAdminId"
+                  ],
+                  "targetFields": [
+                    "id"
+                  ]
+                },
+                "to": {
+                  "model": "User",
+                  "namespace": "public"
+                }
+              }
+            },
+            "storage": {
+              "fields": {
+                "assignedToId": {
+                  "column": "assignedToId"
+                },
+                "createdAt": {
+                  "column": "createdAt"
+                },
+                "createdByAdminId": {
+                  "column": "createdByAdminId"
+                },
+                "description": {
+                  "column": "description"
+                },
+                "id": {
+                  "column": "id"
+                },
+                "notes": {
+                  "column": "notes"
+                },
+                "relatedUserId": {
+                  "column": "relatedUserId"
+                },
+                "status": {
+                  "column": "status"
+                },
+                "taskType": {
+                  "column": "taskType"
+                },
+                "title": {
+                  "column": "title"
+                },
+                "updatedAt": {
+                  "column": "updatedAt"
+                }
+              },
+              "namespaceId": "public",
+              "table": "task"
+            }
+          },
           "User": {
             "fields": {
               "address": {
+                "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "city": {
                 "nullable": true,
                 "type": {
                   "codecId": "pg/text@1",
@@ -2892,6 +3617,21 @@
               }
             },
             "relations": {
+              "assignedTasks": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "assignedToId"
+                  ]
+                },
+                "to": {
+                  "model": "Task",
+                  "namespace": "public"
+                }
+              },
               "bids": {
                 "cardinality": "1:N",
                 "on": {
@@ -2904,6 +3644,21 @@
                 },
                 "to": {
                   "model": "Bid",
+                  "namespace": "public"
+                }
+              },
+              "createdTasks": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "createdByAdminId"
+                  ]
+                },
+                "to": {
+                  "model": "Task",
                   "namespace": "public"
                 }
               },
@@ -3057,6 +3812,21 @@
                   "namespace": "public"
                 }
               },
+              "professionalSkills": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "professionalId"
+                  ]
+                },
+                "to": {
+                  "model": "ProfessionalSkill",
+                  "namespace": "public"
+                }
+              },
               "returnRequests": {
                 "cardinality": "1:N",
                 "on": {
@@ -3099,6 +3869,21 @@
                 },
                 "to": {
                   "model": "Review",
+                  "namespace": "public"
+                }
+              },
+              "storeAccesses": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "StoreAccess",
                   "namespace": "public"
                 }
               },
@@ -3167,6 +3952,9 @@
               "fields": {
                 "address": {
                   "column": "address"
+                },
+                "city": {
+                  "column": "city"
                 },
                 "createdAt": {
                   "column": "createdAt"
@@ -4388,7 +5176,22 @@
                   "nativeType": "int4",
                   "nullable": false
                 },
+                "checkoutOtp": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "checkoutOtpVerifiedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
                 "commissionAmount": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "copies": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
                   "nullable": true
@@ -4417,9 +5220,34 @@
                   "nativeType": "text",
                   "nullable": true
                 },
+                "deliveryOtp": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "deliveryOtpVerifiedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
                 "demandId": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
+                  "nullable": true
+                },
+                "dropAddress": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "dropLatitude": {
+                  "codecId": "pg/float8@1",
+                  "nativeType": "float8",
+                  "nullable": true
+                },
+                "dropLongitude": {
+                  "codecId": "pg/float8@1",
+                  "nativeType": "float8",
                   "nullable": true
                 },
                 "gstAmount": {
@@ -4437,6 +5265,11 @@
                   "nativeType": "int4",
                   "nullable": true
                 },
+                "hoursBooked": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
                 "id": {
                   "codecId": "pg/int4@1",
                   "default": {
@@ -4444,6 +5277,24 @@
                     "kind": "function"
                   },
                   "nativeType": "int4",
+                  "nullable": false
+                },
+                "isColorPrint": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "isFreight": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
                   "nullable": false
                 },
                 "isPaid": {
@@ -4464,10 +5315,99 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "otpRequired": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "pages": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "pickupAddress": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "pickupLatitude": {
+                  "codecId": "pg/float8@1",
+                  "nativeType": "float8",
+                  "nullable": true
+                },
+                "pickupLongitude": {
+                  "codecId": "pg/float8@1",
+                  "nativeType": "float8",
+                  "nullable": true
+                },
+                "printFilePath": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "professionalSkillId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "rentalEndOtp": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "rentalEndOtpVerifiedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "rentalHours": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "rentalStartOtp": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "rentalStartOtpVerifiedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "rideOtp": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "rideOtpVerifiedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
+                "scheduleType": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "scheduledFor": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "nativeType": "timestamptz",
+                  "nullable": true
+                },
                 "sellerId": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
                   "nullable": false
+                },
+                "sizeCategory": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
                 },
                 "status": {
                   "codecId": "pg/text@1",
@@ -4496,6 +5436,16 @@
                   },
                   "nativeType": "timestamptz",
                   "nullable": false
+                },
+                "vehicleType": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "weightKg": {
+                  "codecId": "pg/float8@1",
+                  "nativeType": "float8",
+                  "nullable": true
                 }
               },
               "foreignKeys": [
@@ -4936,6 +5886,11 @@
             },
             "product": {
               "columns": {
+                "category": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
                 "createdAt": {
                   "codecId": "pg/timestamptz-string@1",
                   "default": {
@@ -5143,6 +6098,100 @@
                   ]
                 }
               ]
+            },
+            "professionalSkill": {
+              "columns": {
+                "category": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "hourlyRate": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "isActive": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": true
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "professionalId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "skillName": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "professionalId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "professionalSkill"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "professionalId"
+                  ],
+                  "name": "professionalSkill_professionalId_idx_7628e7a5",
+                  "prefix": "professionalSkill_professionalId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
             },
             "razorpayOrderMapping": {
               "columns": {
@@ -5528,6 +6577,25 @@
                   "nativeType": "text",
                   "nullable": false
                 },
+                "offersPrintService": {
+                  "codecId": "pg/bool@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": false
+                  },
+                  "nativeType": "bool",
+                  "nullable": false
+                },
+                "printPricePerPageBw": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "printPricePerPageColor": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
                 "sellerId": {
                   "codecId": "pg/int4@1",
                   "nativeType": "int4",
@@ -5578,9 +6646,242 @@
               },
               "uniques": []
             },
+            "storeAccess": {
+              "columns": {
+                "assignedBySellerId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "storeId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "userId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "storeId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "storeAccess"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "store"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "userId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "storeAccess"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "storeId"
+                  ],
+                  "name": "storeAccess_storeId_idx_c545737d",
+                  "prefix": "storeAccess_storeId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "userId"
+                  ],
+                  "name": "storeAccess_userId_idx_a489d58a",
+                  "prefix": "storeAccess_userId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
+            "task": {
+              "columns": {
+                "assignedToId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "createdAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                },
+                "createdByAdminId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "description": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "id": {
+                  "codecId": "pg/int4@1",
+                  "default": {
+                    "expression": "autoincrement()",
+                    "kind": "function"
+                  },
+                  "nativeType": "int4",
+                  "nullable": false
+                },
+                "notes": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "relatedUserId": {
+                  "codecId": "pg/int4@1",
+                  "nativeType": "int4",
+                  "nullable": true
+                },
+                "status": {
+                  "codecId": "pg/text@1",
+                  "default": {
+                    "kind": "literal",
+                    "value": "pending"
+                  },
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "taskType": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "title": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": false
+                },
+                "updatedAt": {
+                  "codecId": "pg/timestamptz-string@1",
+                  "default": {
+                    "expression": "now()",
+                    "kind": "function"
+                  },
+                  "nativeType": "timestamptz",
+                  "nullable": false
+                }
+              },
+              "foreignKeys": [
+                {
+                  "source": {
+                    "columns": [
+                      "assignedToId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "task"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                },
+                {
+                  "source": {
+                    "columns": [
+                      "createdByAdminId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "task"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "user"
+                  }
+                }
+              ],
+              "indexes": [
+                {
+                  "columns": [
+                    "assignedToId"
+                  ],
+                  "name": "task_assignedToId_idx_45a131c2",
+                  "prefix": "task_assignedToId_idx",
+                  "unique": false
+                },
+                {
+                  "columns": [
+                    "createdByAdminId"
+                  ],
+                  "name": "task_createdByAdminId_idx_5d77412c",
+                  "prefix": "task_createdByAdminId_idx",
+                  "unique": false
+                }
+              ],
+              "primaryKey": {
+                "columns": [
+                  "id"
+                ]
+              },
+              "uniques": []
+            },
             "user": {
               "columns": {
                 "address": {
+                  "codecId": "pg/text@1",
+                  "nativeType": "text",
+                  "nullable": true
+                },
+                "city": {
                   "codecId": "pg/text@1",
                   "nativeType": "text",
                   "nullable": true
@@ -5800,7 +7101,7 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "3ea955b210e31e838371c729af2094f3bb84e342f1d6451320f40b32edffd1c0"
+    "storageHash": "604b739bf17327df8b7e3a4028daaa99541b623969cafa3fce65bc4eeff0d4d8"
   },
   "capabilities": {
     "postgres": {

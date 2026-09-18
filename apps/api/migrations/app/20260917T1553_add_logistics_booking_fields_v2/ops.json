@@ -1,0 +1,380 @@
+[
+  {
+    "id": "column.public.order.dropAddress",
+    "label": "Add column \"dropAddress\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "dropAddress",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"dropAddress\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropAddress"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"dropAddress\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"dropAddress\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"dropAddress\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropAddress"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.dropLatitude",
+    "label": "Add column \"dropLatitude\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "dropLatitude",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"dropLatitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropLatitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"dropLatitude\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"dropLatitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"dropLatitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropLatitude"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.dropLongitude",
+    "label": "Add column \"dropLongitude\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "dropLongitude",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"dropLongitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropLongitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"dropLongitude\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"dropLongitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"dropLongitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "dropLongitude"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.pickupAddress",
+    "label": "Add column \"pickupAddress\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "pickupAddress",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"pickupAddress\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupAddress"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"pickupAddress\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"pickupAddress\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"pickupAddress\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupAddress"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.pickupLatitude",
+    "label": "Add column \"pickupLatitude\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "pickupLatitude",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"pickupLatitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupLatitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"pickupLatitude\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"pickupLatitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"pickupLatitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupLatitude"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.pickupLongitude",
+    "label": "Add column \"pickupLongitude\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "pickupLongitude",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"pickupLongitude\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupLongitude"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"pickupLongitude\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"pickupLongitude\" float8"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"pickupLongitude\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "pickupLongitude"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.rideOtp",
+    "label": "Add column \"rideOtp\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "rideOtp",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"rideOtp\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rideOtp"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"rideOtp\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"rideOtp\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"rideOtp\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rideOtp"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.rideOtpVerifiedAt",
+    "label": "Add column \"rideOtpVerifiedAt\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "rideOtpVerifiedAt",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"rideOtpVerifiedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rideOtpVerifiedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"rideOtpVerifiedAt\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"rideOtpVerifiedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"rideOtpVerifiedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rideOtpVerifiedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.vehicleType",
+    "label": "Add column \"vehicleType\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "vehicleType",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"vehicleType\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "vehicleType"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"vehicleType\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"vehicleType\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"vehicleType\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "vehicleType"
+        ]
+      }
+    ]
+  }
+]

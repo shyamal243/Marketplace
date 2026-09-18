@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 
@@ -77,31 +77,31 @@ export default function KycPage() {
   }
 
   if (loading) {
-    return <div className="min-h-screen bg-indigo-deep px-8 py-12 text-paper md:px-16">Loading...</div>;
+    return <div className="min-h-screen bg-rv-bg px-8 py-12 text-rv-text md:px-16">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-indigo-deep px-8 py-12 md:px-16">
+    <div className="hex-grid-bg min-h-screen bg-rv-bg px-8 py-12 md:px-16">
       <div className="mx-auto max-w-xl">
-        <h1 className="font-display text-3xl font-semibold text-paper">Verification (KYC)</h1>
-        <p className="mt-2 font-body text-sm text-indigo-border">
-          Overall status: <span className="text-marigold">{kycStatus}</span>
+        <h1 className="font-display text-3xl font-semibold text-rv-text">Verification (KYC)</h1>
+        <p className="mt-2 font-body text-sm text-rv-text-dim">
+          Overall status: <span className="text-rv-cyan">{kycStatus}</span>
         </p>
 
         {error && (
-          <p className="mt-4 rounded-md bg-red-500/10 px-4 py-3 font-body text-sm text-red-300">{error}</p>
+          <p className="mt-4 rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-3 font-body text-sm text-rv-danger">{error}</p>
         )}
         {message && (
-          <p className="mt-4 rounded-md bg-marigold/10 px-4 py-3 font-body text-sm text-marigold">{message}</p>
+          <p className="mt-4 rounded-md bg-rv-cyan/10 border border-rv-cyan/30 px-4 py-3 font-body text-sm text-rv-cyan">{message}</p>
         )}
 
-        <form onSubmit={handleUpload} className="mt-6 rounded-lg bg-paper p-6">
-          <h2 className="font-display text-lg font-semibold text-ink">Submit a document</h2>
+        <form onSubmit={handleUpload} className="glass-panel mt-6 p-6">
+          <h2 className="font-display text-lg font-semibold text-rv-text">Submit a document</h2>
           <div className="mt-4 flex flex-col gap-3">
             <select
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value)}
-              className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+              className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
             >
               <option value="aadhaar">Aadhaar</option>
               <option value="pan">PAN</option>
@@ -113,17 +113,17 @@ export default function KycPage() {
               value={documentNumber}
               onChange={(e) => setDocumentNumber(e.target.value)}
               placeholder="Document number (optional)"
-              className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-ink outline-none focus:border-marigold focus:ring-2 focus:ring-marigold/30"
+              className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
             />
             <input
               type="file"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="w-full rounded-md border border-ink/15 bg-white px-3 py-2 font-body text-sm text-ink outline-none"
+              className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-sm text-rv-text outline-none"
             />
             <button
               type="submit"
               disabled={uploading}
-              className="rounded-md bg-indigo-deep px-4 py-2.5 font-body font-medium text-paper transition hover:bg-indigo-surface disabled:opacity-60"
+              className="rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
             >
               {uploading ? "Uploading..." : "Submit"}
             </button>
@@ -131,23 +131,23 @@ export default function KycPage() {
         </form>
 
         <div className="mt-8">
-          <h2 className="font-display text-lg font-semibold text-paper">Your documents</h2>
+          <h2 className="font-display text-lg font-semibold text-rv-text">Your documents</h2>
           {documents.length === 0 ? (
-            <p className="mt-3 font-body text-sm text-indigo-border">No documents submitted yet.</p>
+            <p className="mt-3 font-body text-sm text-rv-text-dim">No documents submitted yet.</p>
           ) : (
             <div className="mt-3 flex flex-col gap-2">
               {documents.map((d) => (
-                <div key={d.id} className="rounded-lg bg-indigo-surface px-5 py-3">
+                <div key={d.id} className="glass-panel px-5 py-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-body text-sm capitalize text-paper">
+                    <span className="font-body text-sm capitalize text-rv-text">
                       {d.documentType.replace(/_/g, " ")}
                     </span>
-                    <span className="rounded-full border border-indigo-border px-2.5 py-0.5 font-body text-xs text-indigo-border">
+                    <span className="rounded-full border border-rv-border px-2.5 py-0.5 font-body text-xs text-rv-text-dim">
                       {d.status}
                     </span>
                   </div>
                   {d.rejectionReason && (
-                    <p className="mt-1 font-body text-xs text-red-300">{d.rejectionReason}</p>
+                    <p className="mt-1 font-body text-xs text-rv-danger">{d.rejectionReason}</p>
                   )}
                 </div>
               ))}

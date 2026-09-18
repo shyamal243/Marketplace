@@ -1,0 +1,212 @@
+[
+  {
+    "id": "column.public.order.rentalEndOtp",
+    "label": "Add column \"rentalEndOtp\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "rentalEndOtp",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"rentalEndOtp\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rentalEndOtp"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"rentalEndOtp\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"rentalEndOtp\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"rentalEndOtp\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rentalEndOtp"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.rentalEndOtpVerifiedAt",
+    "label": "Add column \"rentalEndOtpVerifiedAt\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "rentalEndOtpVerifiedAt",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"rentalEndOtpVerifiedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rentalEndOtpVerifiedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"rentalEndOtpVerifiedAt\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"rentalEndOtpVerifiedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"rentalEndOtpVerifiedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rentalEndOtpVerifiedAt"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.rentalHours",
+    "label": "Add column \"rentalHours\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "rentalHours",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"rentalHours\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rentalHours"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"rentalHours\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"rentalHours\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"rentalHours\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rentalHours"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.rentalStartOtp",
+    "label": "Add column \"rentalStartOtp\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "rentalStartOtp",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"rentalStartOtp\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rentalStartOtp"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"rentalStartOtp\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"rentalStartOtp\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"rentalStartOtp\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rentalStartOtp"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.rentalStartOtpVerifiedAt",
+    "label": "Add column \"rentalStartOtpVerifiedAt\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "rentalStartOtpVerifiedAt",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"rentalStartOtpVerifiedAt\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rentalStartOtpVerifiedAt"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"rentalStartOtpVerifiedAt\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"rentalStartOtpVerifiedAt\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"rentalStartOtpVerifiedAt\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "rentalStartOtpVerifiedAt"
+        ]
+      }
+    ]
+  }
+]

@@ -10,6 +10,7 @@ import cors from "cors";
 import helmet from "helmet";
 import multer from "multer";
 import path from "path";
+import fs from "fs";
 
 
 interface AuthRequest extends express.Request {
@@ -376,13 +377,20 @@ app.get("/deliveries/mine", requireAuth, async (req: AuthRequest, res) => {
     }
 
     const assignments = await db.orm.public.DeliveryAssignment.where({ deliveryPersonId: req.userId! }).all();
-    res.status(200).json(assignments);
+
+    const enriched = await Promise.all(
+      assignments.map(async (a) => {
+        const order = await db.orm.public.Order.where({ id: a.orderId }).first();
+        return { ...a, orderType: order?.orderType ?? null };
+      })
+    );
+
+    res.status(200).json(enriched);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
-
 app.post("/logout", requireAuth, async (req: AuthRequest & { token?: string }, res) => {
   try {
     if (req.token) {
@@ -437,6 +445,122 @@ app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+
+app.post("/demands/ai-draft", requireAuth, upload.single("photo"), async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "buyer") {
+      return res.status(403).json({ error: "Only buyers can draft demands" });
+    }
+
+    const { text } = req.body;
+    const photoFile = req.file;
+
+    if (!text && !photoFile) {
+      return res.status(400).json({ error: "Provide some text or a photo describing what you need" });
+    }
+
+    const parts: Array<Record<string, unknown>> = [];
+
+    const promptText = `The buyer typed or said: "${text || "(no text provided, see photo)"}"
+
+Based on this (and the photo if provided), draft a demand posting for a reverse-marketplace platform. Correct any typos. Respond ONLY with JSON in this exact shape, no other text, no markdown fences:
+{
+  "title": "short corrected title",
+  "description": "a clear 1-3 sentence description",
+  "category": "a single lowercase category word, e.g. clothing, cleaning, electronics, maid, carpentry, medicines",
+  "budget": null or a number if a budget was mentioned or reasonably inferable,
+  "hoursNeeded": null or a number if this is an hourly service request
+}`;
+
+    parts.push({ text: promptText });
+
+    if (photoFile) {
+      const imageBuffer = fs.readFileSync(photoFile.path);
+      const base64Image = imageBuffer.toString("base64");
+      const ext = path.extname(photoFile.originalname).toLowerCase();
+      const mimeTypeMap: Record<string, string> = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+      };
+      const mimeType = mimeTypeMap[ext] || "image/jpeg";
+      parts.push({
+        inline_data: { mime_type: mimeType, data: base64Image },
+      });
+    }
+
+    async function callGemini(): Promise<Response> {
+      const maxAttempts = 3;
+      let lastResponse: Response | null = null;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": process.env.GEMINI_API_KEY!,
+            },
+            body: JSON.stringify({
+              contents: [{ parts }],
+            }),
+          }
+        );
+
+        if (response.ok) return response;
+
+        lastResponse = response;
+        if (response.status === 503 || response.status === 429) {
+          const waitMs = 500 * Math.pow(2, attempt);
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          continue;
+        }
+        break;
+      }
+
+      return lastResponse!;
+    }
+
+    const aiResponse = await callGemini();
+
+    if (photoFile) {
+      fs.unlink(photoFile.path, () => {});
+    }
+
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      console.error("Gemini API error:", errText);
+      const isOverloaded = aiResponse.status === 503 || aiResponse.status === 429;
+      return res.status(502).json({
+        error: isOverloaded
+          ? "The AI drafting service is busy right now (free tier gets high demand at times) — please try again in a moment, or just fill the form in manually below."
+          : "AI drafting service is unavailable right now",
+      });
+    }
+
+    const aiData = await aiResponse.json();
+    const rawText =
+      aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    let draft;
+    try {
+      const cleaned = rawText.replace(/```json|```/g, "").trim();
+      draft = JSON.parse(cleaned);
+    } catch {
+      console.error("Failed to parse AI response:", rawText);
+      return res
+        .status(502)
+        .json({ error: "Could not understand the AI response, please try again or type your demand manually" });
+    }
+
+    res.json(draft);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
 app.post("/demands/:id/pay-fee", requireAuth, async (req: AuthRequest, res) => {
   try {
     const demandId = Number(req.params.id);
@@ -642,8 +766,8 @@ app.get("/demands", async (req, res) => {
 app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { demandId, amount, message } = req.body;
-        if (req.userRole !== "seller" && req.userRole !== "worker") {
-      return res.status(403).json({ error: "Only sellers or workers can submit bids" });
+        if (req.userRole !== "seller" && req.userRole !== "professional") {
+      return res.status(403).json({ error: "Only sellers or professionals can submit bids" });
     }
         if (typeof amount !== "number" || amount <= 0) {
       return res.status(400).json({ error: "amount must be a positive number" });
@@ -876,6 +1000,11 @@ app.post("/orders/:id/ship", requireAuth, async (req: AuthRequest, res) => {
     if (order.status !== "confirmed") {
       return res.status(400).json({ error: `Cannot ship an order with status "${order.status}"` });
     }
+    if (order.otpRequired && !order.checkoutOtpVerifiedAt) {
+      return res.status(400).json({ error: "The buyer must verify the checkout OTP before this order can ship" });
+    }
+
+    const deliveryOtp = order.otpRequired ? Math.floor(100000 + Math.random() * 900000).toString() : null;
 
     if (deliveryMode !== "local" && deliveryMode !== "courier") {
       return res.status(400).json({ error: "deliveryMode must be 'local' or 'courier'" });
@@ -942,6 +1071,7 @@ app.post("/orders/:id/ship", requireAuth, async (req: AuthRequest, res) => {
         return tx.orm.public.Order.where({ id: order.id }).update({
           status: "shipped",
           deliveryMode: "local",
+          deliveryOtp,
         });
       });
 
@@ -950,6 +1080,14 @@ app.post("/orders/:id/ship", requireAuth, async (req: AuthRequest, res) => {
         type: "delivery_assigned",
         userId: chosenPerson.id,
       });
+
+      if (order.otpRequired && deliveryOtp) {
+        await db.orm.public.Notification.create({
+          message: `Your delivery verification code for order #${order.id} is ${deliveryOtp}. Share this with the delivery partner only when you receive your item.`,
+          type: "delivery_otp",
+          userId: order.buyerId,
+        });
+      }
 
       return res.status(200).json({ ...updatedOrder, assignedTo: chosenPerson.name });
     }
@@ -961,9 +1099,18 @@ app.post("/orders/:id/ship", requireAuth, async (req: AuthRequest, res) => {
     const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({
       status: "shipped",
       deliveryMode: "courier",
+      deliveryOtp,
       trackingNumber,
       courierName,
     });
+
+    if (order.otpRequired && deliveryOtp) {
+      await db.orm.public.Notification.create({
+        message: `Your delivery verification code for order #${order.id} is ${deliveryOtp}. Share this with the delivery partner only when you receive your item.`,
+        type: "delivery_otp",
+        userId: order.buyerId,
+      });
+    }
 
     res.status(200).json(updatedOrder);
   } catch (error) {
@@ -976,6 +1123,7 @@ app.post("/deliveries/:orderId/status", requireAuth, async (req: AuthRequest, re
   try {
     const orderId = Number(req.params.orderId);
     const { status } = req.body;
+    const { otp } = req.body;
 
     const allowedStatuses = ["picked_up", "out_for_delivery", "delivered"];
 
@@ -991,6 +1139,52 @@ app.post("/deliveries/:orderId/status", requireAuth, async (req: AuthRequest, re
 
     if (assignment.deliveryPersonId !== req.userId) {
       return res.status(403).json({ error: "This delivery is not assigned to you" });
+    }
+
+    const orderForOtp = await db.orm.public.Order.where({ id: orderId }).first();
+    if (
+      orderForOtp &&
+      orderForOtp.orderType === "logistics_booking" &&
+      status === "picked_up" &&
+      !orderForOtp.rideOtpVerifiedAt
+    ) {
+      if (!otp || otp !== orderForOtp.rideOtp) {
+        return res.status(400).json({ error: "Incorrect or missing ride start OTP" });
+      }
+      await db.orm.public.Order.where({ id: orderForOtp.id }).update({
+        rideOtpVerifiedAt: new Date().toISOString(),
+        rideOtp: null,
+      });
+    }
+
+    if (
+      orderForOtp &&
+      orderForOtp.orderType === "vehicle_rental" &&
+      status === "picked_up" &&
+      !orderForOtp.rentalStartOtpVerifiedAt
+    ) {
+      if (!otp || otp !== orderForOtp.rentalStartOtp) {
+        return res.status(400).json({ error: "Incorrect or missing rental start OTP" });
+      }
+      await db.orm.public.Order.where({ id: orderForOtp.id }).update({
+        rentalStartOtpVerifiedAt: new Date().toISOString(),
+        rentalStartOtp: null,
+      });
+    }
+
+    if (
+      orderForOtp &&
+      orderForOtp.orderType === "vehicle_rental" &&
+      status === "delivered" &&
+      !orderForOtp.rentalEndOtpVerifiedAt
+    ) {
+      if (!otp || otp !== orderForOtp.rentalEndOtp) {
+        return res.status(400).json({ error: "Incorrect or missing rental end OTP" });
+      }
+      await db.orm.public.Order.where({ id: orderForOtp.id }).update({
+        rentalEndOtpVerifiedAt: new Date().toISOString(),
+        rentalEndOtp: null,
+      });
     }
 
     const updatedAssignment = await db.transaction(async (tx) => {
@@ -1375,6 +1569,7 @@ app.post("/deliveries/:orderId/tip", requireAuth, async (req: AuthRequest, res) 
 app.post("/orders/:id/deliver", requireAuth, async (req: AuthRequest, res) => {
   try {
     const orderId = Number(req.params.id);
+    const { otp } = req.body;
 
     const order = await db.orm.public.Order.where({ id: orderId }).first();
 
@@ -1389,8 +1584,13 @@ app.post("/orders/:id/deliver", requireAuth, async (req: AuthRequest, res) => {
     if (order.status !== "shipped") {
       return res.status(400).json({ error: `Cannot mark as delivered an order with status "${order.status}"` });
     }
+    if (order.otpRequired && !order.deliveryOtpVerifiedAt) {
+      if (!otp || otp !== order.deliveryOtp) {
+        return res.status(400).json({ error: "Incorrect or missing delivery OTP" });
+      }
+    }
 
-    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ status: "delivered" });
+    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ status: "delivered", deliveryOtpVerifiedAt: order.otpRequired ? new Date().toISOString() : order.deliveryOtpVerifiedAt, deliveryOtp: order.otpRequired ? null : order.deliveryOtp });
 
     res.status(200).json(updatedOrder);
   } catch (error) {
@@ -1498,8 +1698,8 @@ app.post("/orders/:id/review", requireAuth, async (req: AuthRequest, res) => {
       return res.status(403).json({ error: "You are not the buyer for this order" });
     }
 
-    if (order.status !== "delivered") {
-      return res.status(400).json({ error: "Can only review delivered orders" });
+    if (order.status !== "delivered" && order.status !== "completed") {
+      return res.status(400).json({ error: "Can only review delivered or completed orders" });
     }
 
     const existingReviews = await db.orm.public.Review.where({ orderId: order.id }).all();
@@ -1543,8 +1743,8 @@ app.post("/orders/:id/review-buyer", requireAuth, async (req: AuthRequest, res) 
       return res.status(403).json({ error: "You are not the seller for this order" });
     }
 
-    if (order.status !== "delivered") {
-      return res.status(400).json({ error: "Can only review delivered orders" });
+    if (order.status !== "delivered" && order.status !== "completed") {
+      return res.status(400).json({ error: "Can only review delivered or completed orders" });
     }
 
     const existingReviews = await db.orm.public.Review.where({ orderId: order.id }).all();
@@ -2296,7 +2496,7 @@ app.post("/admin/kyc/:id/decide", requireAuth, async (req: AuthRequest, res) => 
 
 app.post("/stores", requireAuth, async (req: AuthRequest, res) => {
   try {
-    if (req.userRole !== "seller") {
+    if (req.userRole !== "seller" && req.userRole !== "co_supplier") {
       return res.status(403).json({ error: "Only sellers can create stores" });
     }
 
@@ -2340,7 +2540,7 @@ app.post("/products", requireAuth, async (req: AuthRequest, res) => {
       return res.status(403).json({ error: "Only sellers can add products" });
     }
 
-    const { storeId, name, description, price, stock } = req.body;
+    const { storeId, name, description, category, price, stock } = req.body;
 
     if (!storeId) {
       return res.status(400).json({ error: "storeId is required" });
@@ -2363,6 +2563,7 @@ app.post("/products", requireAuth, async (req: AuthRequest, res) => {
     const product = await db.orm.public.Product.create({
       name,
       description,
+      category: category || undefined,
       price,
       stock: stock ?? 0,
       storeId,
@@ -2420,6 +2621,105 @@ app.get("/stores/:id/products", async (req, res) => {
   }
 });
 
+app.post("/professional-skills", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "professional") {
+      return res.status(403).json({ error: "Only professionals can add skills" });
+    }
+
+    const { skillName, category, hourlyRate } = req.body;
+
+    if (!skillName) {
+      return res.status(400).json({ error: "skillName is required" });
+    }
+
+    if (typeof hourlyRate !== "number" || hourlyRate <= 0) {
+      return res.status(400).json({ error: "hourlyRate must be a positive number" });
+    }
+
+    const skill = await db.orm.public.ProfessionalSkill.create({
+      skillName,
+      category: category || undefined,
+      hourlyRate,
+      professionalId: req.userId!,
+    });
+
+    res.status(201).json(skill);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/professional-skills/:id/remove", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const skillId = Number(req.params.id);
+
+    const skill = await db.orm.public.ProfessionalSkill.where({ id: skillId }).first();
+
+    if (!skill) {
+      return res.status(404).json({ error: "Skill not found" });
+    }
+
+    if (skill.professionalId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this skill" });
+    }
+
+    const updated = await db.orm.public.ProfessionalSkill.where({ id: skill.id }).update({ isActive: false });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/professional-skills/mine", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const skills = await db.orm.public.ProfessionalSkill.where({ professionalId: req.userId!, isActive: true }).all();
+    res.status(200).json(skills);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/professional-skills/search", async (req, res) => {
+  try {
+    const { category, search } = req.query;
+
+    const filters: Record<string, unknown> = { isActive: true };
+
+    if (category) {
+      filters.category = category;
+    }
+
+    let skills = await db.orm.public.ProfessionalSkill.where(filters).all();
+
+    if (search) {
+      const term = String(search).toLowerCase();
+      skills = skills.filter((s) => s.skillName.toLowerCase().includes(term));
+    }
+
+    const professionalIds = [...new Set(skills.map((s) => s.professionalId))];
+    const professionals = await Promise.all(
+      professionalIds.map((id) => db.orm.public.User.where({ id }).first())
+    );
+
+    const results = skills.map((skill) => {
+      const professional = professionals.find((p) => p?.id === skill.professionalId);
+      return {
+        ...skill,
+        professionalName: professional?.name ?? "Unknown",
+      };
+    });
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
 app.get("/stores/nearby", async (req, res) => {
   try {
     const { latitude, longitude, radiusKm } = req.query;
@@ -2459,9 +2759,102 @@ app.get("/stores/nearby", async (req, res) => {
   }
 });
 
+app.post("/products/prescription-scan", requireAuth, upload.single("photo"), async (req: AuthRequest, res) => {
+  try {
+    const photoFile = req.file;
+
+    if (!photoFile) {
+      return res.status(400).json({ error: "Please attach a photo of the prescription" });
+    }
+
+    const imageBuffer = fs.readFileSync(photoFile.path);
+    const base64Image = imageBuffer.toString("base64");
+    const ext = path.extname(photoFile.originalname).toLowerCase();
+    const mimeTypeMap: Record<string, string> = {
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
+      ".webp": "image/webp",
+    };
+    const mimeType = mimeTypeMap[ext] || "image/jpeg";
+
+    const promptText = `This is a photo of a medical prescription. Read the medicine names written or printed on it. Respond ONLY with JSON in this exact shape, no other text, no markdown fences:
+{
+  "medicines": ["medicine name 1", "medicine name 2"]
+}
+If you cannot read any medicine names clearly, respond with { "medicines": [] }. Do not guess or invent medicine names that are not visible in the image.`;
+
+    const parts = [
+      { text: promptText },
+      { inline_data: { mime_type: mimeType, data: base64Image } },
+    ];
+
+    async function callGemini(): Promise<Response> {
+      const maxAttempts = 3;
+      let lastResponse: Response | null = null;
+
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": process.env.GEMINI_API_KEY!,
+            },
+            body: JSON.stringify({ contents: [{ parts }] }),
+          }
+        );
+
+        if (response.ok) return response;
+
+        lastResponse = response;
+        if (response.status === 503 || response.status === 429) {
+          const waitMs = 500 * Math.pow(2, attempt);
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          continue;
+        }
+        break;
+      }
+
+      return lastResponse!;
+    }
+
+    const aiResponse = await callGemini();
+    fs.unlink(photoFile.path, () => {});
+
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      console.error("Gemini API error:", errText);
+      const isOverloaded = aiResponse.status === 503 || aiResponse.status === 429;
+      return res.status(502).json({
+        error: isOverloaded
+          ? "The scanning service is busy right now — please try again in a moment, or search manually."
+          : "Could not scan the prescription right now",
+      });
+    }
+
+    const aiData = await aiResponse.json();
+    const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+    let result;
+    try {
+      const cleaned = rawText.replace(/```json|```/g, "").trim();
+      result = JSON.parse(cleaned);
+    } catch {
+      console.error("Failed to parse prescription scan response:", rawText);
+      return res.status(502).json({ error: "Could not read the prescription, please try a clearer photo" });
+    }
+
+    res.json({ medicines: Array.isArray(result.medicines) ? result.medicines : [] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
 app.get("/products/search", async (req, res) => {
   try {
-    const { search, maxPrice } = req.query;
+    const { search, maxPrice, category } = req.query;
 
     let products = await db.orm.public.Product.where({ isActive: true }).all();
 
@@ -2475,6 +2868,11 @@ app.get("/products/search", async (req, res) => {
     if (maxPrice) {
       const max = Number(maxPrice);
       products = products.filter((p) => p.price <= max);
+    }
+
+    if (category) {
+      const cat = String(category).toLowerCase();
+      products = products.filter((p) => (p.category ?? "").toLowerCase() === cat);
     }
 
     res.status(200).json(products);
@@ -2565,6 +2963,7 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
     }
 
     let subtotal = 0;
+    let hasJewellery = false;
     const validatedItems: { productId: number; quantity: number; priceAtPurchase: number }[] = [];
 
     for (const item of items) {
@@ -2586,6 +2985,7 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
 
       subtotal += product.price * quantity;
       validatedItems.push({ productId, quantity, priceAtPurchase: product.price });
+      if (product.category === "jewellery") hasJewellery = true;
     }
 
     let deliveryFeeAmount = store.deliveryFeeBase;
@@ -2601,6 +3001,8 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
     }
 
     const totalAmount = subtotal + deliveryFeeAmount;
+
+    const checkoutOtp = hasJewellery ? Math.floor(100000 + Math.random() * 900000).toString() : null;
 
         const { gstCategory } = req.body;
 
@@ -2628,6 +3030,8 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
         gstAmount,
         commissionAmount,
         status: "confirmed",
+        otpRequired: hasJewellery,
+        checkoutOtp,
       });
 
             if (commissionAmount > 0) {
@@ -2664,7 +3068,7 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
       userId: store.sellerId,
     });
 
-    res.status(201).json({ ...order, items: validatedItems, subtotal, deliveryFeeAmount, totalAmount });
+    res.status(201).json({ ...order, items: validatedItems, subtotal, deliveryFeeAmount, totalAmount, devCheckoutOtp: hasJewellery ? checkoutOtp : undefined });
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("INSUFFICIENT_STOCK:")) {
       return res.status(400).json({ error: "One or more items went out of stock during checkout" });
@@ -2674,6 +3078,968 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+app.post("/orders/:id/verify-checkout-otp", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+    const { otp } = req.body;
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the buyer for this order" });
+    }
+
+    if (!order.otpRequired) {
+      return res.status(400).json({ error: "This order does not require OTP verification" });
+    }
+
+    if (order.checkoutOtpVerifiedAt) {
+      return res.status(400).json({ error: "This order's checkout OTP has already been verified" });
+    }
+
+    if (!otp || otp !== order.checkoutOtp) {
+      return res.status(400).json({ error: "Incorrect OTP" });
+    }
+
+    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({
+      checkoutOtpVerifiedAt: new Date().toISOString(),
+      checkoutOtp: null,
+    });
+
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+app.post("/service-bookings", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { professionalSkillId, scheduleType, hoursBooked, scheduledFor } = req.body;
+
+    const allowedSchedules = ["instant", "today", "tomorrow", "weekly", "monthly"];
+
+    if (!professionalSkillId) {
+      return res.status(400).json({ error: "professionalSkillId is required" });
+    }
+
+    if (!scheduleType || !allowedSchedules.includes(scheduleType)) {
+      return res.status(400).json({ error: `scheduleType must be one of: ${allowedSchedules.join(", ")}` });
+    }
+
+    if (typeof hoursBooked !== "number" || hoursBooked <= 0) {
+      return res.status(400).json({ error: "hoursBooked must be a positive number" });
+    }
+
+    const skill = await db.orm.public.ProfessionalSkill.where({ id: professionalSkillId, isActive: true }).first();
+
+    if (!skill) {
+      return res.status(404).json({ error: "This skill is not available" });
+    }
+
+    const amount = skill.hourlyRate * hoursBooked;
+
+    const order = await db.orm.public.Order.create({
+      orderType: "service_booking",
+      professionalSkillId,
+      scheduleType,
+      scheduledFor: scheduledFor || null,
+      hoursBooked,
+      buyerId: req.userId!,
+      sellerId: skill.professionalId,
+      amount,
+      status: "confirmed",
+    });
+
+    await db.orm.public.Notification.create({
+      message: `New booking for "${skill.skillName}" (${scheduleType}, ${hoursBooked}h)`,
+      type: "new_service_booking",
+      userId: skill.professionalId,
+    });
+
+    res.status(201).json(order);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/orders/:id/complete", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.orderType !== "service_booking") {
+      return res.status(400).json({ error: "This route is only for service bookings" });
+    }
+
+    if (order.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the professional for this booking" });
+    }
+
+    if (order.status !== "confirmed") {
+      return res.status(400).json({ error: `Cannot complete a booking with status "${order.status}"` });
+    }
+
+    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ status: "completed" });
+
+    await db.orm.public.Notification.create({
+      message: `Your booking #${order.id} has been marked as completed`,
+      type: "service_completed",
+      userId: order.buyerId,
+    });
+
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+app.post("/logistics-bookings", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const {
+      vehicleType,
+      pickupLatitude,
+      pickupLongitude,
+      pickupAddress,
+      dropLatitude,
+      dropLongitude,
+      dropAddress,
+      isFreight,
+      weightKg,
+      sizeCategory,
+    } = req.body;
+
+    const allowedVehicles = ["2w", "3w", "4w"];
+
+    if (!vehicleType || !allowedVehicles.includes(vehicleType)) {
+      return res.status(400).json({ error: `vehicleType must be one of: ${allowedVehicles.join(", ")}` });
+    }
+
+    if (!pickupLatitude || !pickupLongitude || !dropLatitude || !dropLongitude) {
+      return res.status(400).json({ error: "pickupLatitude, pickupLongitude, dropLatitude, and dropLongitude are required" });
+    }
+
+    const allowedSizes = ["small", "medium", "large"];
+
+    if (isFreight && sizeCategory && !allowedSizes.includes(sizeCategory)) {
+      return res.status(400).json({ error: `sizeCategory must be one of: ${allowedSizes.join(", ")}` });
+    }
+
+    if (isFreight && (typeof weightKg !== "number" || weightKg <= 0)) {
+      return res.status(400).json({ error: "weightKg must be a positive number for freight bookings" });
+    }
+
+    const VEHICLE_RATES: Record<string, { base: number; perKm: number; freeWeightKg: number; extraPerKg: number }> = {
+      "2w": { base: 20, perKm: 8, freeWeightKg: 5, extraPerKg: 2 },
+      "3w": { base: 30, perKm: 12, freeWeightKg: 20, extraPerKg: 1.5 },
+      "4w": { base: 50, perKm: 18, freeWeightKg: 50, extraPerKg: 1 },
+    };
+
+    const SIZE_MULTIPLIER: Record<string, number> = {
+      small: 1,
+      medium: 1.15,
+      large: 1.3,
+    };
+
+    const distanceKm = await calculateRoadDistanceKm(pickupLatitude, pickupLongitude, dropLatitude, dropLongitude);
+    const rate = VEHICLE_RATES[vehicleType]!;
+    let amount = rate.base + Math.round(distanceKm * rate.perKm);
+
+    if (isFreight) {
+      const extraWeight = Math.max(0, (weightKg as number) - rate.freeWeightKg);
+      const weightSurcharge = Math.round(extraWeight * rate.extraPerKg);
+      const multiplier = sizeCategory ? SIZE_MULTIPLIER[sizeCategory as string]! : 1;
+      amount = Math.round((amount + weightSurcharge) * multiplier);
+    }
+
+    const availablePeople = await db.orm.public.User.where({
+      role: "delivery",
+      isAvailableForDelivery: true,
+    }).all();
+
+    if (availablePeople.length === 0) {
+      return res.status(400).json({ error: "No delivery partners are currently available. Please try again shortly." });
+    }
+
+    let chosenPerson = availablePeople[0]!;
+
+    const withDistance = availablePeople
+      .filter((p) => p.currentLatitude !== null && p.currentLongitude !== null)
+      .map((p) => {
+        const R = 6371;
+        const dLat = ((p.currentLatitude! - pickupLatitude) * Math.PI) / 180;
+        const dLon = ((p.currentLongitude! - pickupLongitude) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((pickupLatitude * Math.PI) / 180) *
+            Math.cos((p.currentLatitude! * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return { person: p, distanceKm: R * c };
+      })
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+
+    if (withDistance.length > 0) {
+      chosenPerson = withDistance[0]!.person;
+    }
+
+    const rideOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const order = await db.transaction(async (tx) => {
+      const newOrder = await tx.orm.public.Order.create({
+        orderType: "logistics_booking",
+        vehicleType,
+        pickupLatitude,
+        pickupLongitude,
+        pickupAddress: pickupAddress || undefined,
+        dropLatitude,
+        dropLongitude,
+        dropAddress: dropAddress || undefined,
+        isFreight: Boolean(isFreight),
+        weightKg: isFreight ? weightKg : undefined,
+        sizeCategory: isFreight ? sizeCategory || undefined : undefined,
+        rideOtp,
+        buyerId: req.userId!,
+        sellerId: chosenPerson.id,
+        amount,
+        status: "confirmed",
+      });
+
+      await tx.orm.public.DeliveryAssignment.create({
+        orderId: newOrder.id,
+        deliveryPersonId: chosenPerson.id,
+      });
+
+      return newOrder;
+    });
+
+    await db.orm.public.Notification.create({
+      message: `New ${vehicleType.toUpperCase()}${isFreight ? " freight" : ""} request assigned to you`,
+      type: "new_logistics_booking",
+      userId: chosenPerson.id,
+    });
+
+    res.status(201).json({ ...order, distanceKm: Math.round(distanceKm * 10) / 10, assignedTo: chosenPerson.name, devRideOtp: rideOtp });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/stores/:id/print-settings", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const storeId = Number(req.params.id);
+    const { offersPrintService, printPricePerPageBw, printPricePerPageColor } = req.body;
+
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const hasAccess =
+      store.sellerId === req.userId ||
+      (await db.orm.public.StoreAccess.where({ storeId, userId: req.userId! }).first()) !== null;
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: "You do not have access to manage this store" });
+    }
+
+    const updated = await db.orm.public.Store.where({ id: storeId }).update({
+      offersPrintService: Boolean(offersPrintService),
+      printPricePerPageBw: printPricePerPageBw ?? undefined,
+      printPricePerPageColor: printPricePerPageColor ?? undefined,
+    });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/printout-orders", requireAuth, upload.single("document"), async (req: AuthRequest, res) => {
+  try {
+    const { storeId, pages, copies, isColorPrint } = req.body;
+    const documentFile = req.file;
+
+    if (!documentFile) {
+      return res.status(400).json({ error: "Please attach the document to print" });
+    }
+
+    const pagesNum = Number(pages);
+    const copiesNum = Number(copies);
+    const isColor = isColorPrint === "true" || isColorPrint === true;
+
+    if (!storeId || !pagesNum || pagesNum <= 0 || !copiesNum || copiesNum <= 0) {
+      fs.unlink(documentFile.path, () => {});
+      return res.status(400).json({ error: "storeId, pages, and copies are required and must be positive" });
+    }
+
+    const store = await db.orm.public.Store.where({ id: Number(storeId) }).first();
+
+    if (!store || !store.offersPrintService) {
+      fs.unlink(documentFile.path, () => {});
+      return res.status(404).json({ error: "This store does not offer print service" });
+    }
+
+    const perPageRate = isColor ? store.printPricePerPageColor : store.printPricePerPageBw;
+
+    if (!perPageRate) {
+      fs.unlink(documentFile.path, () => {});
+      return res.status(400).json({ error: "This store has not set pricing for that print type" });
+    }
+
+    const amount = perPageRate * pagesNum * copiesNum;
+
+    const order = await db.orm.public.Order.create({
+      orderType: "printout_order",
+      storeId: store.id,
+      pages: pagesNum,
+      copies: copiesNum,
+      isColorPrint: isColor,
+      printFilePath: documentFile.filename,
+      buyerId: req.userId!,
+      sellerId: store.sellerId,
+      amount,
+      status: "confirmed",
+    });
+
+    await db.orm.public.Notification.create({
+      message: `New print order received at "${store.name}" (${pagesNum} pages x ${copiesNum} copies, ${isColor ? "color" : "B&W"})`,
+      type: "new_printout_order",
+      userId: store.sellerId,
+    });
+
+    res.status(201).json(order);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/printout-orders/:id/document", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order || order.orderType !== "printout_order") {
+      return res.status(404).json({ error: "Print order not found" });
+    }
+
+    if (order.buyerId !== req.userId && order.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You are not part of this order" });
+    }
+
+    if (!order.printFilePath) {
+      return res.status(404).json({ error: "This document is no longer available" });
+    }
+
+    res.setHeader("Content-Disposition", "inline");
+    res.sendFile(order.printFilePath, { root: "uploads" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/orders/:id/print-complete", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order || order.orderType !== "printout_order") {
+      return res.status(404).json({ error: "Print order not found" });
+    }
+
+    if (order.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You are not the store owner for this order" });
+    }
+
+    if (order.status !== "confirmed") {
+      return res.status(400).json({ error: `Cannot complete a print order with status "${order.status}"` });
+    }
+
+    if (order.printFilePath) {
+      const filePath = path.join("uploads", order.printFilePath);
+      fs.unlink(filePath, (err) => {
+        if (err) console.error("Failed to delete print file:", err);
+      });
+    }
+
+    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({
+      status: "completed",
+      printFilePath: null,
+    });
+
+    await db.orm.public.Notification.create({
+      message: `Your print order #${order.id} is complete`,
+      type: "printout_completed",
+      userId: order.buyerId,
+    });
+
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+app.post("/vehicle-rentals", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { vehicleType, pickupLatitude, pickupLongitude, pickupAddress, rentalHours } = req.body;
+
+    const allowedVehicles = ["2w", "3w", "4w"];
+
+    if (!vehicleType || !allowedVehicles.includes(vehicleType)) {
+      return res.status(400).json({ error: `vehicleType must be one of: ${allowedVehicles.join(", ")}` });
+    }
+
+    if (!pickupLatitude || !pickupLongitude) {
+      return res.status(400).json({ error: "pickupLatitude and pickupLongitude are required" });
+    }
+
+    if (typeof rentalHours !== "number" || rentalHours <= 0) {
+      return res.status(400).json({ error: "rentalHours must be a positive number" });
+    }
+
+    const RENTAL_HOURLY_RATES: Record<string, number> = {
+      "2w": 80,
+      "3w": 120,
+      "4w": 200,
+    };
+
+    const amount = RENTAL_HOURLY_RATES[vehicleType]! * rentalHours;
+
+    const availablePeople = await db.orm.public.User.where({
+      role: "delivery",
+      isAvailableForDelivery: true,
+    }).all();
+
+    if (availablePeople.length === 0) {
+      return res.status(400).json({ error: "No drivers are currently available. Please try again shortly." });
+    }
+
+    let chosenPerson = availablePeople[0]!;
+
+    const withDistance = availablePeople
+      .filter((p) => p.currentLatitude !== null && p.currentLongitude !== null)
+      .map((p) => {
+        const R = 6371;
+        const dLat = ((p.currentLatitude! - pickupLatitude) * Math.PI) / 180;
+        const dLon = ((p.currentLongitude! - pickupLongitude) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((pickupLatitude * Math.PI) / 180) *
+            Math.cos((p.currentLatitude! * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return { person: p, distanceKm: R * c };
+      })
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+
+    if (withDistance.length > 0) {
+      chosenPerson = withDistance[0]!.person;
+    }
+
+    const rentalStartOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const rentalEndOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    const order = await db.transaction(async (tx) => {
+      const newOrder = await tx.orm.public.Order.create({
+        orderType: "vehicle_rental",
+        vehicleType,
+        pickupLatitude,
+        pickupLongitude,
+        pickupAddress: pickupAddress || undefined,
+        rentalHours,
+        rentalStartOtp,
+        rentalEndOtp,
+        buyerId: req.userId!,
+        sellerId: chosenPerson.id,
+        amount,
+        status: "confirmed",
+      });
+
+      await tx.orm.public.DeliveryAssignment.create({
+        orderId: newOrder.id,
+        deliveryPersonId: chosenPerson.id,
+      });
+
+      return newOrder;
+    });
+
+    await db.orm.public.Notification.create({
+      message: `New ${vehicleType.toUpperCase()} rental request assigned to you (${rentalHours}h)`,
+      type: "new_vehicle_rental",
+      userId: chosenPerson.id,
+    });
+
+    res.status(201).json({
+      ...order,
+      assignedTo: chosenPerson.name,
+      devRentalStartOtp: rentalStartOtp,
+      devRentalEndOtp: rentalEndOtp,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+app.post("/admin/users/:id/promote-co-admin", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const userId = Number(req.params.id);
+    const { city } = req.body;
+
+    if (!city) {
+      return res.status(400).json({ error: "city is required" });
+    }
+
+    const targetUser = await db.orm.public.User.where({ id: userId }).first();
+
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const updated = await db.orm.public.User.where({ id: userId }).update({
+      role: "co_admin",
+      city,
+    });
+
+    res.status(200).json({ id: updated!.id, name: updated!.name, email: updated!.email, role: updated!.role, city: updated!.city });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/admin/users/:id/demote-co-admin", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const userId = Number(req.params.id);
+
+    const targetUser = await db.orm.public.User.where({ id: userId }).first();
+
+    if (!targetUser || targetUser.role !== "co_admin") {
+      return res.status(404).json({ error: "Co-admin not found" });
+    }
+
+    const updated = await db.orm.public.User.where({ id: userId }).update({
+      role: "buyer",
+      city: null,
+    });
+
+    res.status(200).json({ id: updated!.id, role: updated!.role });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/co-admin/users", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "co_admin") {
+      return res.status(403).json({ error: "Co-admin access required" });
+    }
+
+    const me = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!me?.city) {
+      return res.status(400).json({ error: "Your co-admin account has no assigned city" });
+    }
+
+    const users = await db.orm.public.User.where({ city: me.city }).all();
+    const sanitized = users.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, kycStatus: u.kycStatus, city: u.city }));
+
+    res.status(200).json(sanitized);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/co-admin/orders", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "co_admin") {
+      return res.status(403).json({ error: "Co-admin access required" });
+    }
+
+    const me = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!me?.city) {
+      return res.status(400).json({ error: "Your co-admin account has no assigned city" });
+    }
+
+    const cityUsers = await db.orm.public.User.where({ city: me.city }).all();
+    const cityUserIds = new Set(cityUsers.map((u) => u.id));
+
+    const allOrders = await db.orm.public.Order.where({}).all();
+    const scopedOrders = allOrders.filter((o) => cityUserIds.has(o.buyerId) || cityUserIds.has(o.sellerId));
+
+    res.status(200).json(scopedOrders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/co-admin/kyc/pending", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "co_admin") {
+      return res.status(403).json({ error: "Co-admin access required" });
+    }
+
+    const me = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!me?.city) {
+      return res.status(400).json({ error: "Your co-admin account has no assigned city" });
+    }
+
+    const cityUsers = await db.orm.public.User.where({ city: me.city }).all();
+    const cityUserIds = new Set(cityUsers.map((u) => u.id));
+
+    const allPending = await db.orm.public.KycDocument.where({ status: "pending" }).all();
+    const scopedPending = allPending.filter((d) => cityUserIds.has(d.userId));
+
+    res.status(200).json(scopedPending);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/co-admin/kyc/:id/decide", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "co_admin") {
+      return res.status(403).json({ error: "Co-admin access required" });
+    }
+
+    const docId = Number(req.params.id);
+    const { decision } = req.body;
+
+    if (decision !== "approved" && decision !== "rejected") {
+      return res.status(400).json({ error: "decision must be 'approved' or 'rejected'" });
+    }
+
+    const me = await db.orm.public.User.where({ id: req.userId! }).first();
+    const doc = await db.orm.public.KycDocument.where({ id: docId }).first();
+
+    if (!doc) {
+      return res.status(404).json({ error: "Document not found" });
+    }
+
+    const docUser = await db.orm.public.User.where({ id: doc.userId }).first();
+
+    if (!docUser || docUser.city !== me?.city) {
+      return res.status(403).json({ error: "This document is outside your assigned city" });
+    }
+
+    const updatedDoc = await db.orm.public.KycDocument.where({ id: docId }).update({ status: decision });
+
+    const remainingPending = await db.orm.public.KycDocument.where({ userId: doc.userId, status: "pending" }).all();
+    if (remainingPending.length === 0) {
+      const allDocs = await db.orm.public.KycDocument.where({ userId: doc.userId }).all();
+      const allApproved = allDocs.every((d) => d.status === "approved");
+      if (allApproved) {
+        await db.orm.public.User.where({ id: doc.userId }).update({ kycStatus: "verified" });
+      }
+    }
+
+    res.status(200).json(updatedDoc);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+app.post("/stores/:id/assign-co-supplier", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const storeId = Number(req.params.id);
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: "email is required" });
+    }
+
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    if (store.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this store" });
+    }
+
+    const targetUser = await db.orm.public.User.where({ email }).first();
+
+    if (!targetUser) {
+      return res.status(404).json({ error: "No user found with that email" });
+    }
+
+    if (targetUser.id === req.userId) {
+      return res.status(400).json({ error: "You cannot assign yourself as a co-supplier" });
+    }
+
+    const existing = await db.orm.public.StoreAccess.where({ storeId, userId: targetUser.id }).first();
+
+    if (existing) {
+      return res.status(400).json({ error: "This user already has access to this store" });
+    }
+
+    if (targetUser.role === "buyer") {
+      await db.orm.public.User.where({ id: targetUser.id }).update({ role: "co_supplier" });
+    }
+
+    const access = await db.orm.public.StoreAccess.create({
+      storeId,
+      userId: targetUser.id,
+      assignedBySellerId: req.userId!,
+    });
+
+    await db.orm.public.Notification.create({
+      message: `You've been given access to manage "${store.name}"`,
+      type: "co_supplier_assigned",
+      userId: targetUser.id,
+    });
+
+    res.status(201).json(access);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/stores/:id/remove-co-supplier", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const storeId = Number(req.params.id);
+    const { userId } = req.body;
+
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    if (store.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this store" });
+    }
+
+    const access = await db.orm.public.StoreAccess.where({ storeId, userId }).first();
+
+    if (!access) {
+      return res.status(404).json({ error: "This user does not have access to this store" });
+    }
+
+    await db.orm.public.StoreAccess.where({ id: access.id }).delete();
+
+    res.status(200).json({ removed: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/stores/:id/co-suppliers", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const storeId = Number(req.params.id);
+
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    if (store.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You do not own this store" });
+    }
+
+    const accesses = await db.orm.public.StoreAccess.where({ storeId }).all();
+    const results = await Promise.all(
+      accesses.map(async (a) => {
+        const u = await db.orm.public.User.where({ id: a.userId }).first();
+        return { accessId: a.id, userId: a.userId, name: u?.name ?? "Unknown", email: u?.email ?? "" };
+      })
+    );
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/co-supplier/stores", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "co_supplier") {
+      return res.status(403).json({ error: "Co-supplier access required" });
+    }
+
+    const accesses = await db.orm.public.StoreAccess.where({ userId: req.userId! }).all();
+    const stores = await Promise.all(
+      accesses.map((a) => db.orm.public.Store.where({ id: a.storeId }).first())
+    );
+
+    res.status(200).json(stores.filter((s) => s !== null));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+app.post("/admin/users/:id/promote-employee", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const userId = Number(req.params.id);
+
+    const targetUser = await db.orm.public.User.where({ id: userId }).first();
+
+    if (!targetUser) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const updated = await db.orm.public.User.where({ id: userId }).update({ role: "employee" });
+
+    res.status(200).json({ id: updated!.id, role: updated!.role });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/admin/tasks", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const { assignedToId, taskType, relatedUserId, title, description } = req.body;
+
+    const allowedTypes = ["verify_store", "verify_seller", "verify_delivery_partner", "verify_professional", "other"];
+
+    if (!assignedToId || !title) {
+      return res.status(400).json({ error: "assignedToId and title are required" });
+    }
+
+    if (!taskType || !allowedTypes.includes(taskType)) {
+      return res.status(400).json({ error: `taskType must be one of: ${allowedTypes.join(", ")}` });
+    }
+
+    const assignee = await db.orm.public.User.where({ id: assignedToId }).first();
+
+    if (!assignee || assignee.role !== "employee") {
+      return res.status(400).json({ error: "assignedToId must belong to a user with the employee role" });
+    }
+
+    const task = await db.orm.public.Task.create({
+      assignedToId,
+      createdByAdminId: req.userId!,
+      taskType,
+      relatedUserId: relatedUserId || undefined,
+      title,
+      description: description || undefined,
+      status: "pending",
+    });
+
+    await db.orm.public.Notification.create({
+      message: `New task assigned: "${title}"`,
+      type: "new_task",
+      userId: assignedToId,
+    });
+
+    res.status(201).json(task);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/admin/tasks", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const tasks = await db.orm.public.Task.where({}).all();
+
+    res.status(200).json(tasks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/employee/tasks", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "employee") {
+      return res.status(403).json({ error: "Employee access required" });
+    }
+
+    const tasks = await db.orm.public.Task.where({ assignedToId: req.userId! }).all();
+
+    res.status(200).json(tasks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/employee/tasks/:id/status", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "employee") {
+      return res.status(403).json({ error: "Employee access required" });
+    }
+
+    const taskId = Number(req.params.id);
+    const { status, notes } = req.body;
+
+    const allowedStatuses = ["pending", "in_progress", "completed"];
+
+    if (!status || !allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: `status must be one of: ${allowedStatuses.join(", ")}` });
+    }
+
+    const task = await db.orm.public.Task.where({ id: taskId }).first();
+
+    if (!task) {
+      return res.status(404).json({ error: "Task not found" });
+    }
+
+    if (task.assignedToId !== req.userId) {
+      return res.status(403).json({ error: "This task is not assigned to you" });
+    }
+
+    const updatedTask = await db.orm.public.Task.where({ id: taskId }).update({
+      status,
+      notes: notes !== undefined ? notes : task.notes,
+    });
+
+    res.status(200).json(updatedTask);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
 app.get("/store-orders/:id", requireAuth, async (req: AuthRequest, res) => {
   try {
     const orderId = Number(req.params.id);

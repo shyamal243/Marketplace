@@ -1,0 +1,170 @@
+[
+  {
+    "id": "column.public.order.hoursBooked",
+    "label": "Add column \"hoursBooked\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "hoursBooked",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"hoursBooked\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "hoursBooked"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"hoursBooked\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"hoursBooked\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"hoursBooked\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "hoursBooked"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.professionalSkillId",
+    "label": "Add column \"professionalSkillId\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "professionalSkillId",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"professionalSkillId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "professionalSkillId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"professionalSkillId\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"professionalSkillId\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"professionalSkillId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "professionalSkillId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.scheduleType",
+    "label": "Add column \"scheduleType\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "scheduleType",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"scheduleType\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "scheduleType"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"scheduleType\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"scheduleType\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"scheduleType\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "scheduleType"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.order.scheduledFor",
+    "label": "Add column \"scheduledFor\" to \"order\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "scheduledFor",
+        "table": "order"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"scheduledFor\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "scheduledFor"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"scheduledFor\"",
+        "sql": "ALTER TABLE \"public\".\"order\" ADD COLUMN \"scheduledFor\" timestamptz"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"scheduledFor\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "order",
+          "scheduledFor"
+        ]
+      }
+    ]
+  }
+]
