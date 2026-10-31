@@ -201,6 +201,20 @@ const ALLOWED_UPLOAD_TYPES = new Map([
 
 const SIGNUP_ROLES = ["buyer", "seller", "worker", "delivery"];
 
+function paginate<T>(items: T[], query: express.Request["query"], defaultLimit = 50, maxLimit = 100) {
+  const page = Math.max(1, Math.floor(Number(query.page)) || 1);
+  const limit = Math.min(maxLimit, Math.max(1, Math.floor(Number(query.limit)) || defaultLimit));
+  const start = (page - 1) * limit;
+  return { page, limit, total: items.length, items: items.slice(start, start + limit) };
+}
+
+// Masks a government ID number (e.g. Aadhaar/PAN) so only the last 4 characters are visible.
+function maskDocumentNumber<T extends { documentNumber?: string | null }>(doc: T): T {
+  if (!doc.documentNumber) return doc;
+  const n = doc.documentNumber;
+  return { ...doc, documentNumber: n.length <= 4 ? "****" : `${"*".repeat(n.length - 4)}${n.slice(-4)}` };
+}
+
 function toPaise(rupees: number): number {
   return Math.round(rupees * 100);
 }
@@ -224,6 +238,26 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
   message: { error: "Too many login attempts. Please try again in 15 minutes." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message: { error: "Too many signups from this address. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const paymentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { error: "Too many payment requests. Please slow down." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 300,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -284,6 +318,7 @@ app.post("/webhooks/razorpay", express.raw({ type: "application/json" }), async 
 });
 
 app.use(express.json({ limit: "1mb" }));
+app.use(apiLimiter);
 
 
 app.get("/", (req, res) => {
@@ -293,7 +328,7 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.post("/signup", async (req, res) => {
+app.post("/signup", signupLimiter, async (req, res) => {
   try {
     const { password, name, role } = req.body;
     let { email } = req.body;
@@ -612,7 +647,7 @@ app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-app.post("/demands/:id/pay-fee", requireAuth, async (req: AuthRequest, res) => {
+app.post("/demands/:id/pay-fee", paymentLimiter, requireAuth, async (req: AuthRequest, res) => {
   try {
     const demandId = Number(req.params.id);
     const { method } = req.body;
@@ -700,7 +735,7 @@ app.post("/demands/:id/pay-fee", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-app.post("/demands/:id/verify-fee-payment", requireAuth, async (req: AuthRequest, res) => {
+app.post("/demands/:id/verify-fee-payment", paymentLimiter, requireAuth, async (req: AuthRequest, res) => {
   try {
     const demandId = Number(req.params.id);
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
@@ -808,7 +843,9 @@ app.get("/demands", async (req, res) => {
       demands = demands.filter((d) => d.title.toLowerCase().includes(term));
     }
 
-    res.status(200).json(demands);
+    const result = paginate(demands, req.query);
+    res.setHeader("X-Total-Count", String(result.total));
+    res.status(200).json(result.items);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
@@ -1996,7 +2033,7 @@ app.get("/gst-rates", async (req, res) => {
   }
 });
 
-app.post("/wallet/topup", requireAuth, async (req: AuthRequest, res) => {
+app.post("/wallet/topup", paymentLimiter, requireAuth, async (req: AuthRequest, res) => {
   try {
     const { amount } = req.body;
 
@@ -2030,7 +2067,7 @@ app.post("/wallet/topup", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-app.post("/wallet/verify-topup", requireAuth, async (req: AuthRequest, res) => {
+app.post("/wallet/verify-topup", paymentLimiter, requireAuth, async (req: AuthRequest, res) => {
   try {
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
 
@@ -2078,7 +2115,7 @@ app.get("/wallet", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-app.post("/orders/:id/pay", requireAuth, async (req: AuthRequest, res) => {
+app.post("/orders/:id/pay", paymentLimiter, requireAuth, async (req: AuthRequest, res) => {
   try {
     const orderId = Number(req.params.id);
 
@@ -2128,7 +2165,7 @@ app.post("/orders/:id/pay", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
-app.post("/orders/:id/verify-payment", requireAuth, async (req: AuthRequest, res) => {
+app.post("/orders/:id/verify-payment", paymentLimiter, requireAuth, async (req: AuthRequest, res) => {
   try {
     const orderId = Number(req.params.id);
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
@@ -2273,8 +2310,12 @@ app.post("/kyc/upload", requireAuth, upload.single("document"), async (req: Auth
 
     const { documentType, documentNumber } = req.body;
 
-    if (!documentType) {
+    if (typeof documentType !== "string" || !documentType) {
       return res.status(400).json({ error: "documentType is required" });
+    }
+
+    if (documentNumber !== undefined && (typeof documentNumber !== "string" || documentNumber.length > 30)) {
+      return res.status(400).json({ error: "documentNumber must be text up to 30 characters" });
     }
 
     const fileUrl = req.file ? `/uploads/${req.file.filename}` : null;
@@ -2292,7 +2333,7 @@ app.post("/kyc/upload", requireAuth, upload.single("document"), async (req: Auth
       return kycDoc;
     });
 
-    res.status(201).json(doc);
+    res.status(201).json(maskDocumentNumber(doc));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
@@ -2326,7 +2367,7 @@ app.get("/kyc/mine", requireAuth, async (req: AuthRequest, res) => {
     const docs = await db.orm.public.KycDocument.where({ userId: req.userId! }).all();
     const user = await db.orm.public.User.where({ id: req.userId! }).first();
 
-    res.status(200).json({ kycStatus: user?.kycStatus, documents: docs });
+    res.status(200).json({ kycStatus: user?.kycStatus, documents: docs.map(maskDocumentNumber) });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
@@ -2916,7 +2957,9 @@ app.get("/admin/users", requireAuth, async (req: AuthRequest, res) => {
     const users = await db.orm.public.User.where(filters).all();
     const usersWithoutPasswords = users.map(({ password, ...rest }) => rest);
 
-    res.status(200).json(usersWithoutPasswords);
+    const result = paginate(usersWithoutPasswords, req.query);
+    res.setHeader("X-Total-Count", String(result.total));
+    res.status(200).json(result.items);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
@@ -2937,7 +2980,9 @@ app.get("/admin/orders", requireAuth, async (req: AuthRequest, res) => {
     }
 
     const orders = await db.orm.public.Order.where(filters).all();
-    res.status(200).json(orders);
+    const result = paginate(orders, req.query);
+    res.setHeader("X-Total-Count", String(result.total));
+    res.status(200).json(result.items);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
