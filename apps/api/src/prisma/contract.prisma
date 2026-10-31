@@ -337,3 +337,13 @@ model RazorpayOrderMapping {
   amount          Int
   createdAt       TimestamptzString @default(now())
 }
+
+model AuditLog {
+  id         Int               @id @default(autoincrement())
+  actorId    Int
+  action     String // e.g. "wallet_adjust", "set_commission", "set_booking_fee", "set_gst_rate", "kyc_decision"
+  targetType String?
+  targetId   Int?
+  details    String? // JSON string describing the change
+  createdAt  TimestamptzString @default(now())
+}
