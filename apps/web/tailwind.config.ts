@@ -8,20 +8,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Robotik View palette
-        "rv-bg": "#0a0e17",
-        "rv-bg-alt": "#0f1420",
-        "rv-panel": "#131a2b",
-        "rv-cyan": "#00f0ff",
-        "rv-magenta": "#ff2ea6",
-        "rv-cyan-dim": "#0891a3",
-        "rv-magenta-dim": "#a3157a",
-        "rv-text": "#e6f1ff",
-        "rv-text-dim": "#8a99b3",
-        "rv-border": "rgba(0, 240, 255, 0.25)",
-        "rv-success": "#39ff88",
-        "rv-warning": "#ffb84d",
-        "rv-danger": "#ff4d6a",
+        "rv-bg": "rgb(var(--rv-bg-rgb) / <alpha-value>)",
+        "rv-bg-alt": "rgb(var(--rv-bg-alt-rgb) / <alpha-value>)",
+        "rv-panel": "rgb(var(--rv-panel-rgb) / <alpha-value>)",
+        "rv-cyan": "rgb(var(--rv-cyan-rgb) / <alpha-value>)",
+        "rv-magenta": "rgb(var(--rv-magenta-rgb) / <alpha-value>)",
+        "rv-cyan-dim": "rgb(var(--rv-cyan-dim-rgb) / <alpha-value>)",
+        "rv-magenta-dim": "rgb(var(--rv-magenta-dim-rgb) / <alpha-value>)",
+        "rv-text": "rgb(var(--rv-text-rgb) / <alpha-value>)",
+        "rv-text-dim": "rgb(var(--rv-text-dim-rgb) / <alpha-value>)",
+        "rv-border": "var(--rv-border)",
+        "rv-success": "rgb(var(--rv-success-rgb) / <alpha-value>)",
+        "rv-warning": "rgb(var(--rv-warning-rgb) / <alpha-value>)",
+        "rv-danger": "rgb(var(--rv-danger-rgb) / <alpha-value>)",
       },
       fontFamily: {
         display: ["var(--font-orbitron)", "sans-serif"],

@@ -3,6 +3,19 @@
 @tailwind utilities;
 
 :root {
+  --rv-bg-rgb: 10 14 23;
+  --rv-bg-alt-rgb: 15 20 32;
+  --rv-panel-rgb: 19 26 43;
+  --rv-cyan-rgb: 0 240 255;
+  --rv-magenta-rgb: 255 46 166;
+  --rv-cyan-dim-rgb: 8 145 163;
+  --rv-magenta-dim-rgb: 163 21 122;
+  --rv-text-rgb: 230 241 255;
+  --rv-text-dim-rgb: 138 153 179;
+  --rv-success-rgb: 57 255 136;
+  --rv-warning-rgb: 255 184 77;
+  --rv-danger-rgb: 255 77 106;
+  --rv-border: rgba(0, 240, 255, 0.25);
   --rv-bg: #0a0e17;
   --rv-cyan: #00f0ff;
   --rv-magenta: #ff2ea6;
@@ -52,4 +65,13 @@ body {
     animation: hud-scan 3s linear infinite;
     pointer-events: none;
   }
+}
+
+/* Keep our custom theme colors on form controls even when the browser/OS
+   forces its own colors (e.g. Windows High Contrast / Forced Colors mode) */
+input,
+textarea,
+select,
+button {
+  forced-color-adjust: none;
 }

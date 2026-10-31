@@ -26,6 +26,16 @@ interface CoSupplier {
   email: string;
 }
 
+interface StoreInfo {
+  id: number;
+  name: string;
+  address: string | null;
+  isActive: boolean;
+  offersPrintService: boolean;
+  fssaiLicenseNumber: string | null;
+  businessRegistrationNumber: string | null;
+}
+
 export default function StorePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [products, setProducts] = useState<Product[]>([]);
@@ -40,6 +50,7 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [cart, setCart] = useState<Record<number, number>>({});
+  const [couponCode, setCouponCode] = useState("");
   const [favorited, setFavorited] = useState(false);
 
   const [offersPrint, setOffersPrint] = useState(false);
@@ -53,10 +64,29 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
   const [assigningCoSupplier, setAssigningCoSupplier] = useState(false);
   const [coSupplierError, setCoSupplierError] = useState("");
 
+  const [bulkFile, setBulkFile] = useState<File | null>(null);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{ createdCount: number; totalRows: number; errors: { row: number; error: string }[] } | null>(null);
+  const [bulkError, setBulkError] = useState("");
+
+  const [hygieneStatus, setHygieneStatus] = useState<{ uploadedToday: boolean; latestUploadedAt: string | null } | null>(null);
+  const [hygieneFile, setHygieneFile] = useState<File | null>(null);
+  const [uploadingHygiene, setUploadingHygiene] = useState(false);
+  const [hygieneError, setHygieneError] = useState("");
+
+  const [store, setStore] = useState<StoreInfo | null>(null);
+  const [fssaiInput, setFssaiInput] = useState("");
+  const [businessRegInput, setBusinessRegInput] = useState("");
+  const [savingLicenseInfo, setSavingLicenseInfo] = useState(false);
+  const [licenseError, setLicenseError] = useState("");
+  const [licenseMessage, setLicenseMessage] = useState("");
+
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) setUser(JSON.parse(storedUser));
     loadProducts();
+    loadHygieneStatus();
+    loadStoreInfo();
   }, [id]);
 
   useEffect(() => {
@@ -65,6 +95,39 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  async function loadStoreInfo() {
+    try {
+      const data = await apiFetch(`/stores/${id}`);
+      setStore(data);
+      setFssaiInput(data.fssaiLicenseNumber || "");
+      setBusinessRegInput(data.businessRegistrationNumber || "");
+    } catch {
+      // not critical - the page still works without store metadata
+    }
+  }
+
+  async function handleSaveLicenseInfo(e: React.FormEvent) {
+    e.preventDefault();
+    setLicenseError("");
+    setLicenseMessage("");
+    setSavingLicenseInfo(true);
+    try {
+      await apiFetch(`/stores/${id}/license-info`, {
+        method: "POST",
+        body: JSON.stringify({
+          fssaiLicenseNumber: fssaiInput || undefined,
+          businessRegistrationNumber: businessRegInput || undefined,
+        }),
+      });
+      setLicenseMessage("License info saved.");
+      await loadStoreInfo();
+    } catch (err) {
+      setLicenseError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setSavingLicenseInfo(false);
+    }
+  }
 
   async function loadProducts() {
     setLoading(true);
@@ -150,6 +213,117 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
     }
   }
 
+  async function loadHygieneStatus() {
+    try {
+      const response = await fetch(`http://localhost:4000/stores/${id}/hygiene-status`);
+      const data = await response.json();
+      if (response.ok) {
+        setHygieneStatus(data);
+      }
+    } catch {
+      // ignore - non-critical
+    }
+  }
+
+  async function handleUploadHygienePhoto(e: React.FormEvent) {
+    e.preventDefault();
+    setHygieneError("");
+
+    if (!hygieneFile) {
+      setHygieneError("Please choose a photo first");
+      return;
+    }
+
+    setUploadingHygiene(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const formData = new FormData();
+      formData.append("photo", hygieneFile);
+
+      const response = await fetch(`http://localhost:4000/stores/${id}/hygiene-photo`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      setHygieneFile(null);
+      await loadHygieneStatus();
+    } catch (err) {
+      setHygieneError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setUploadingHygiene(false);
+    }
+  }
+
+  async function handleDownloadTemplate() {
+    setBulkError("");
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const response = await fetch("http://localhost:4000/products/bulk-upload/template", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) {
+        throw new Error("Could not download the template");
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "product-upload-template.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setBulkError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
+  async function handleBulkUpload(e: React.FormEvent) {
+    e.preventDefault();
+    setBulkError("");
+    setBulkResult(null);
+
+    if (!bulkFile) {
+      setBulkError("Please choose an Excel (.xlsx) file first");
+      return;
+    }
+
+    setBulkUploading(true);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const formData = new FormData();
+      formData.append("storeId", String(id));
+      formData.append("file", bulkFile);
+
+      const response = await fetch("http://localhost:4000/products/bulk-upload", {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      setBulkResult(data);
+      setBulkFile(null);
+      await loadProducts();
+    } catch (err) {
+      setBulkError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setBulkUploading(false);
+    }
+  }
+
   function updateCart(productId: number, quantity: number) {
     setCart((prev) => ({ ...prev, [productId]: quantity }));
   }
@@ -169,10 +343,16 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
     try {
       const order = await apiFetch("/store-orders", {
         method: "POST",
-        body: JSON.stringify({ storeId: Number(id), items }),
+        body: JSON.stringify({ storeId: Number(id), items, couponCode: couponCode || undefined }),
       });
-      setMessage(`Order placed! Order #${order.id} - Total Rs.${order.totalAmount}`);
+      const couponNote = order.couponApplied
+        ? order.couponApplied.rewardType === "cashback"
+          ? ` (coupon ${order.couponApplied.code} credited Rs.${order.couponApplied.amount} cashback)`
+          : ` (coupon ${order.couponApplied.code} saved Rs.${order.couponApplied.amount})`
+        : "";
+      setMessage(`Order placed! Order #${order.id} - Total Rs.${order.totalAmount}${couponNote}`);
       setCart({});
+      setCouponCode("");
       await loadProducts();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -221,7 +401,23 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
     <div className="hex-grid-bg min-h-screen bg-rv-bg px-8 py-12 md:px-16">
       <div className="mx-auto max-w-2xl">
         <div className="flex items-center justify-between">
-          <h1 className="font-display text-3xl font-semibold text-rv-text">Store #{id}</h1>
+          <div>
+            <h1 className="font-display text-3xl font-semibold text-rv-text">{store?.name || `Store #${id}`}</h1>
+            {store && (store.fssaiLicenseNumber || store.businessRegistrationNumber) && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {store.fssaiLicenseNumber && (
+                  <span className="rounded-full border border-rv-cyan/30 bg-rv-cyan/10 px-2.5 py-0.5 font-body text-xs text-rv-cyan">
+                    FSSAI: {store.fssaiLicenseNumber}
+                  </span>
+                )}
+                {store.businessRegistrationNumber && (
+                  <span className="rounded-full border border-rv-cyan/30 bg-rv-cyan/10 px-2.5 py-0.5 font-body text-xs text-rv-cyan">
+                    Reg. No: {store.businessRegistrationNumber}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {isManager && (
               <Link
@@ -312,6 +508,94 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
         )}
 
         {isManager && (
+          <div className="glass-panel mt-6 p-6">
+            <h2 className="font-display text-lg font-semibold text-rv-text">Today's kitchen hygiene photo</h2>
+            <p className="mt-1 font-body text-xs text-rv-text-dim">
+              Required daily for stores selling food items before food orders can be placed.
+            </p>
+            <p className="mt-2 font-body text-sm">
+              {hygieneStatus?.uploadedToday ? (
+                <span className="text-rv-cyan">Verified today</span>
+              ) : (
+                <span className="text-rv-danger">Not uploaded today</span>
+              )}
+            </p>
+            <form onSubmit={handleUploadHygienePhoto} className="mt-3 flex flex-col gap-3">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setHygieneFile(e.target.files ? e.target.files[0] : null)}
+                className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-sm text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+              />
+              <button
+                type="submit"
+                disabled={uploadingHygiene}
+                className="rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
+              >
+                {uploadingHygiene ? "Uploading..." : "Upload today's photo"}
+              </button>
+            </form>
+            {hygieneError && (
+              <p className="mt-3 rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-2 font-body text-sm text-rv-danger">{hygieneError}</p>
+            )}
+          </div>
+        )}
+
+        {isManager && (
+          <div className="glass-panel mt-6 p-6">
+            <h2 className="font-display text-lg font-semibold text-rv-text">Bulk upload products (Excel)</h2>
+            <p className="mt-1 font-body text-xs text-rv-text-dim">
+              Upload many products at once using a .xlsx file. Columns: name, description, category, price, stock.
+            </p>
+
+            <button
+              type="button"
+              onClick={handleDownloadTemplate}
+              className="mt-3 rounded-md border border-rv-border px-3 py-1.5 font-body text-sm text-rv-text transition hover:hud-border hover:text-rv-cyan"
+            >
+              Download sample template
+            </button>
+
+            <form onSubmit={handleBulkUpload} className="mt-4 flex flex-col gap-3">
+              <input
+                type="file"
+                accept=".xlsx"
+                onChange={(e) => setBulkFile(e.target.files ? e.target.files[0] : null)}
+                className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-sm text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+              />
+              <button
+                type="submit"
+                disabled={bulkUploading}
+                className="rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
+              >
+                {bulkUploading ? "Uploading..." : "Upload products"}
+              </button>
+            </form>
+
+            {bulkError && (
+              <p className="mt-3 rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-2 font-body text-sm text-rv-danger">{bulkError}</p>
+            )}
+
+            {bulkResult && (
+              <div className="mt-3 rounded-md border border-rv-border bg-rv-panel px-4 py-3">
+                <p className="font-body text-sm text-rv-cyan">
+                  Created {bulkResult.createdCount} of {bulkResult.totalRows} products.
+                </p>
+                {bulkResult.errors.length > 0 && (
+                  <ul className="mt-2 flex flex-col gap-1">
+                    {bulkResult.errors.map((err, i) => (
+                      <li key={i} className="font-body text-xs text-rv-text-dim">
+                        Row {err.row}: {err.error}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {isManager && (
           <form onSubmit={handleSavePrintSettings} className="glass-panel mt-6 p-6">
             <h2 className="font-display text-lg font-semibold text-rv-text">Print service settings</h2>
             <div className="mt-4 flex items-center justify-between rounded-md border border-rv-border bg-rv-panel px-3 py-2">
@@ -360,6 +644,50 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
               className="mt-4 rounded-md bg-rv-magenta px-4 py-2 font-body text-sm font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
             >
               {savingPrintSettings ? "Saving..." : "Save print settings"}
+            </button>
+          </form>
+        )}
+
+        {isManager && (
+          <form onSubmit={handleSaveLicenseInfo} className="glass-panel mt-6 p-6">
+            <h2 className="font-display text-lg font-semibold text-rv-text">License &amp; registration info</h2>
+            <p className="mt-1 font-body text-xs text-rv-text-dim">
+              Shown to buyers on this page to build trust. Leave blank if not applicable.
+            </p>
+            {licenseError && (
+              <p className="mt-3 rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-2 font-body text-sm text-rv-danger">{licenseError}</p>
+            )}
+            {licenseMessage && (
+              <p className="mt-3 rounded-md bg-rv-cyan/10 border border-rv-cyan/30 px-4 py-2 font-body text-sm text-rv-cyan">{licenseMessage}</p>
+            )}
+            <div className="mt-3 flex flex-col gap-3">
+              <div>
+                <label className="font-body text-xs font-medium text-rv-text-dim">FSSAI license number</label>
+                <input
+                  type="text"
+                  value={fssaiInput}
+                  onChange={(e) => setFssaiInput(e.target.value)}
+                  placeholder="e.g. 12345678901234"
+                  className="mt-1 w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-sm text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                />
+              </div>
+              <div>
+                <label className="font-body text-xs font-medium text-rv-text-dim">Business registration number</label>
+                <input
+                  type="text"
+                  value={businessRegInput}
+                  onChange={(e) => setBusinessRegInput(e.target.value)}
+                  placeholder="e.g. GST / Udyam / CIN number"
+                  className="mt-1 w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-sm text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                />
+              </div>
+            </div>
+            <button
+              type="submit"
+              disabled={savingLicenseInfo}
+              className="mt-4 rounded-md bg-rv-magenta px-4 py-2 font-body text-sm font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
+            >
+              {savingLicenseInfo ? "Saving..." : "Save license info"}
             </button>
           </form>
         )}
@@ -460,12 +788,21 @@ export default function StorePage({ params }: { params: Promise<{ id: string }> 
         </div>
 
         {isCustomer && products.length > 0 && (
-          <button
-            onClick={handleCheckout}
-            className="mt-6 w-full rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90"
-          >
-            Place order
-          </button>
+          <div className="mt-6">
+            <input
+              type="text"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              placeholder="Coupon code (optional)"
+              className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-sm text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+            />
+            <button
+              onClick={handleCheckout}
+              className="mt-3 w-full rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90"
+            >
+              Place order
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -191,6 +191,41 @@ app.post("/signup", async (req, res) => {
       referredBy: referredByUserId,
     });
 
+    if (referredByUserId) {
+      const rewardSetting = await db.orm.public.PlatformSetting.where({ key: "referral_reward_amount" }).first();
+      const rewardAmount = rewardSetting ? Number(rewardSetting.value) : 20;
+
+      if (rewardAmount > 0) {
+        await db.transaction(async (tx) => {
+          const referrer = await tx.orm.public.User.where({ id: referredByUserId! }).first();
+
+          if (referrer) {
+            await tx.orm.public.User.where({ id: referrer.id }).update({
+              walletBalance: referrer.walletBalance + rewardAmount,
+            });
+
+            await tx.orm.public.WalletTransaction.create({
+              amount: rewardAmount,
+              type: "credit",
+              reason: "referral_bonus",
+              userId: referrer.id,
+            });
+          }
+
+          await tx.orm.public.User.where({ id: user.id }).update({
+            walletBalance: user.walletBalance + rewardAmount,
+          });
+
+          await tx.orm.public.WalletTransaction.create({
+            amount: rewardAmount,
+            type: "credit",
+            reason: "referral_bonus",
+            userId: user.id,
+          });
+        });
+      }
+    }
+
     const { password: _, ...userWithoutPassword } = user;
     res.status(201).json(userWithoutPassword);
   } catch (error) {
@@ -765,7 +800,7 @@ app.get("/demands", async (req, res) => {
 
 app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { demandId, amount, message } = req.body;
+    const { demandId, amount, message, productId } = req.body;
         if (req.userRole !== "seller" && req.userRole !== "professional") {
       return res.status(403).json({ error: "Only sellers or professionals can submit bids" });
     }
@@ -787,12 +822,36 @@ app.post("/bids", requireAuth, async (req: AuthRequest, res) => {
     if (targetDemand.status !== "open") {
       return res.status(400).json({ error: `Cannot bid on a demand with status "${targetDemand.status}"` });
     }
+
+    let linkedProductId: number | null = null;
+
+    if (productId !== undefined && productId !== null) {
+      const linkedProduct = await db.orm.public.Product.where({ id: productId }).first();
+
+      if (!linkedProduct) {
+        return res.status(404).json({ error: "Linked product not found" });
+      }
+
+      const productStore = await db.orm.public.Store.where({ id: linkedProduct.storeId }).first();
+      const isOwner = productStore?.sellerId === req.userId;
+      const hasAccess =
+        isOwner ||
+        (await db.orm.public.StoreAccess.where({ storeId: linkedProduct.storeId, userId: req.userId! }).first()) !== null;
+
+      if (!hasAccess) {
+        return res.status(403).json({ error: "You can only link a product from your own store" });
+      }
+
+      linkedProductId = linkedProduct.id;
+    }
+
     // STEP 3: Only now do we create the bid (same as before)
     const bid = await db.orm.public.Bid.create({
       demandId,
       amount,
       message,
       sellerId: req.userId!,
+      linkedProductId,
     });
 
     // STEP 4: Look up demand again for the notification (same as before, kept for the message text)
@@ -825,11 +884,29 @@ app.get("/demands/:id/bids", requireAuth, async (req: AuthRequest, res) => {
 
     const allBids = await db.orm.public.Bid.where({ demandId }).all();
 
+    const linkedProductIds = Array.from(
+      new Set(allBids.map((b: any) => b.linkedProductId).filter((id: any) => id !== null && id !== undefined))
+    );
+
+    const linkedProducts = await Promise.all(
+      linkedProductIds.map((productId: number) => db.orm.public.Product.where({ id: productId }).first())
+    );
+
+    const productById = new Map<number, any>();
+    linkedProducts.forEach((p: any) => {
+      if (p) productById.set(p.id, p);
+    });
+
+    const enrichedBids = allBids.map((b: any) => ({
+      ...b,
+      linkedProduct: b.linkedProductId ? productById.get(b.linkedProductId) ?? null : null,
+    }));
+
     if (demand.buyerId === req.userId) {
-      return res.status(200).json(allBids);
+      return res.status(200).json(enrichedBids);
     }
 
-    const ownBidOnly = allBids.filter((b) => b.sellerId === req.userId);
+    const ownBidOnly = enrichedBids.filter((b: any) => b.sellerId === req.userId);
     res.status(200).json(ownBidOnly);
   } catch (error) {
     console.error(error);
@@ -2534,9 +2611,33 @@ app.get("/sellers/:id/stores", async (req, res) => {
   }
 });
 
+app.get("/products/mine", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "seller" && req.userRole !== "co_supplier") {
+      return res.status(403).json({ error: "Only sellers can view their own products" });
+    }
+
+    const ownedStores = await db.orm.public.Store.where({ sellerId: req.userId! }).all();
+    const accessEntries = await db.orm.public.StoreAccess.where({ userId: req.userId! }).all();
+
+    const storeIds = new Set<number>();
+    ownedStores.forEach((s: any) => storeIds.add(s.id));
+    accessEntries.forEach((a: any) => storeIds.add(a.storeId));
+
+    const productsByStore = await Promise.all(
+      Array.from(storeIds).map((storeId) => db.orm.public.Product.where({ storeId, isActive: true }).all())
+    );
+
+    res.status(200).json(productsByStore.flat());
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
 app.post("/products", requireAuth, async (req: AuthRequest, res) => {
   try {
-    if (req.userRole !== "seller") {
+    if (req.userRole !== "seller" && req.userRole !== "co_supplier") {
       return res.status(403).json({ error: "Only sellers can add products" });
     }
 
@@ -2556,8 +2657,15 @@ app.post("/products", requireAuth, async (req: AuthRequest, res) => {
 
     const store = await db.orm.public.Store.where({ id: storeId }).first();
 
-    if (!store || store.sellerId !== req.userId) {
-      return res.status(403).json({ error: "You do not own this store" });
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const isOwner = store.sellerId === req.userId;
+    const hasAccess = isOwner || (await db.orm.public.StoreAccess.where({ storeId: store.id, userId: req.userId! }).first()) !== null;
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: "You do not have access to manage this store" });
     }
 
     const product = await db.orm.public.Product.create({
@@ -2570,6 +2678,194 @@ app.post("/products", requireAuth, async (req: AuthRequest, res) => {
     });
 
     res.status(201).json(product);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/stores/:id/hygiene-photo", requireAuth, upload.single("photo"), async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "seller" && req.userRole !== "co_supplier") {
+      return res.status(403).json({ error: "Only sellers can upload a hygiene photo" });
+    }
+
+    const storeId = Number(req.params.id);
+    const photoFile = req.file;
+
+    if (!photoFile) {
+      return res.status(400).json({ error: "Please attach a photo" });
+    }
+
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      fs.unlink(photoFile.path, () => {});
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const isOwner = store.sellerId === req.userId;
+    const hasAccess = isOwner || (await db.orm.public.StoreAccess.where({ storeId: store.id, userId: req.userId! }).first()) !== null;
+
+    if (!hasAccess) {
+      fs.unlink(photoFile.path, () => {});
+      return res.status(403).json({ error: "You do not have access to manage this store" });
+    }
+
+    const photo = await db.orm.public.HygienePhoto.create({
+      storeId: store.id,
+      photoPath: photoFile.path,
+    });
+
+    res.status(201).json(photo);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/stores/:id/hygiene-status", async (req, res) => {
+  try {
+    const storeId = Number(req.params.id);
+
+    const photos = await db.orm.public.HygienePhoto.where({ storeId }).all();
+
+    let latest: { uploadedAt: string } | null = null;
+    for (const p of photos) {
+      if (!latest || new Date(p.uploadedAt) > new Date(latest.uploadedAt)) {
+        latest = p;
+      }
+    }
+
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const uploadedToday = latest ? new Date(latest.uploadedAt) > twentyFourHoursAgo : false;
+
+    res.status(200).json({ uploadedToday, latestUploadedAt: latest ? latest.uploadedAt : null });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/products/bulk-upload/template", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "seller" && req.userRole !== "co_supplier") {
+      return res.status(403).json({ error: "Only sellers can access this" });
+    }
+
+    const XLSX = require("xlsx");
+
+    const headers = ["name", "description", "category", "price", "stock"];
+    const sampleRow = ["Sample Product", "A short description of the product", "fmcg", 199.5, 25];
+
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, sampleRow]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
+
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+
+    res.setHeader("Content-Disposition", "attachment; filename=product-upload-template.xlsx");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.send(buffer);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/products/bulk-upload", requireAuth, upload.single("file"), async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "seller" && req.userRole !== "co_supplier") {
+      return res.status(403).json({ error: "Only sellers can bulk upload products" });
+    }
+
+    const { storeId } = req.body;
+    const uploadedFile = req.file;
+
+    if (!storeId) {
+      if (uploadedFile) fs.unlink(uploadedFile.path, () => {});
+      return res.status(400).json({ error: "storeId is required" });
+    }
+
+    if (!uploadedFile) {
+      return res.status(400).json({ error: "Please attach an Excel (.xlsx) file" });
+    }
+
+    const store = await db.orm.public.Store.where({ id: Number(storeId) }).first();
+
+    if (!store) {
+      fs.unlink(uploadedFile.path, () => {});
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const isOwner = store.sellerId === req.userId;
+    const hasAccess = isOwner || (await db.orm.public.StoreAccess.where({ storeId: store.id, userId: req.userId! }).first()) !== null;
+
+    if (!hasAccess) {
+      fs.unlink(uploadedFile.path, () => {});
+      return res.status(403).json({ error: "You do not have access to manage this store" });
+    }
+
+    const XLSX = require("xlsx");
+    const workbook = XLSX.readFile(uploadedFile.path);
+    const firstSheetName = workbook.SheetNames[0];
+    const sheet = workbook.Sheets[firstSheetName];
+    const rows: any[] = XLSX.utils.sheet_to_json(sheet, { defval: null });
+
+    fs.unlink(uploadedFile.path, () => {});
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: "The uploaded file has no product rows" });
+    }
+
+    const created: any[] = [];
+    const errors: Array<{ row: number; error: string }> = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNumber = i + 2;
+
+      const name = row.name ? String(row.name).trim() : "";
+      const description: string | null = row.description ? String(row.description).trim() : null;
+      const category: string | null = row.category ? String(row.category).trim() : null;
+      const price = Number(row.price);
+      const stock = row.stock !== null && row.stock !== undefined ? Number(row.stock) : 0;
+
+      if (!name) {
+        errors.push({ row: rowNumber, error: "name is required" });
+        continue;
+      }
+
+      if (!price || price <= 0 || Number.isNaN(price)) {
+        errors.push({ row: rowNumber, error: "price must be a positive number" });
+        continue;
+      }
+
+      if (Number.isNaN(stock) || stock < 0) {
+        errors.push({ row: rowNumber, error: "stock must be a non-negative number" });
+        continue;
+      }
+
+      try {
+        const product = await db.orm.public.Product.create({
+          name,
+          description,
+          category,
+          price,
+          stock,
+          storeId: store.id,
+        });
+        created.push(product);
+      } catch (err) {
+        errors.push({ row: rowNumber, error: "Failed to create product" });
+      }
+    }
+
+    res.status(200).json({
+      createdCount: created.length,
+      totalRows: rows.length,
+      errors,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
@@ -2601,6 +2897,63 @@ app.post("/products/:id/remove", requireAuth, async (req: AuthRequest, res) => {
   }
 });
 
+
+app.get("/stores/:id", async (req, res) => {
+  try {
+    const storeId = Number(req.params.id);
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    res.status(200).json({
+      id: store.id,
+      name: store.name,
+      address: store.address,
+      isActive: store.isActive,
+      offersPrintService: store.offersPrintService,
+      printPricePerPageBw: store.printPricePerPageBw,
+      printPricePerPageColor: store.printPricePerPageColor,
+      fssaiLicenseNumber: store.fssaiLicenseNumber,
+      businessRegistrationNumber: store.businessRegistrationNumber,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/stores/:id/license-info", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const storeId = Number(req.params.id);
+    const { fssaiLicenseNumber, businessRegistrationNumber } = req.body;
+
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const hasAccess =
+      store.sellerId === req.userId ||
+      (await db.orm.public.StoreAccess.where({ storeId, userId: req.userId! }).first()) !== null;
+
+    if (!hasAccess) {
+      return res.status(403).json({ error: "You do not have access to manage this store" });
+    }
+
+    const updated = await db.orm.public.Store.where({ id: storeId }).update({
+      fssaiLicenseNumber: fssaiLicenseNumber || null,
+      businessRegistrationNumber: businessRegistrationNumber || null,
+    });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
 
 app.get("/stores/:id/products", async (req, res) => {
   try {
@@ -2964,6 +3317,7 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
 
     let subtotal = 0;
     let hasJewellery = false;
+    let hasFood = false;
     const validatedItems: { productId: number; quantity: number; priceAtPurchase: number }[] = [];
 
     for (const item of items) {
@@ -2986,6 +3340,65 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
       subtotal += product.price * quantity;
       validatedItems.push({ productId, quantity, priceAtPurchase: product.price });
       if (product.category === "jewellery") hasJewellery = true;
+      if (product.category === "food") hasFood = true;
+    }
+
+    if (hasFood) {
+      const foodPhotos = await db.orm.public.HygienePhoto.where({ storeId: store.id }).all();
+      let latestFoodPhoto: { uploadedAt: string } | null = null;
+      for (const p of foodPhotos) {
+        if (!latestFoodPhoto || new Date(p.uploadedAt) > new Date(latestFoodPhoto.uploadedAt)) {
+          latestFoodPhoto = p;
+        }
+      }
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const hygieneCurrent = latestFoodPhoto ? new Date(latestFoodPhoto.uploadedAt) > twentyFourHoursAgo : false;
+
+      if (!hygieneCurrent) {
+        return res.status(400).json({ error: "This store has not uploaded today's kitchen hygiene photo yet. Food orders cannot be placed until they do." });
+      }
+    }
+
+    const { couponCode } = req.body;
+    let appliedCoupon: { id: number; code: string; rewardType: string; discountAmount: number } | null = null;
+
+    if (couponCode) {
+      const coupon = await db.orm.public.Coupon.where({ code: String(couponCode).trim().toUpperCase() }).first();
+
+      if (!coupon || !coupon.isActive) {
+        return res.status(400).json({ error: "Invalid or inactive coupon code" });
+      }
+
+      if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+        return res.status(400).json({ error: "This coupon has expired" });
+      }
+
+      if (coupon.minOrderAmount && subtotal < coupon.minOrderAmount) {
+        return res.status(400).json({ error: `This coupon requires a minimum order of Rs.${coupon.minOrderAmount}` });
+      }
+
+      if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
+        return res.status(400).json({ error: "This coupon has reached its usage limit" });
+      }
+
+      if (coupon.perUserLimit) {
+        const previousUses = await db.orm.public.CouponRedemption.where({ couponId: coupon.id, userId: req.userId! }).all();
+        if (previousUses.length >= coupon.perUserLimit) {
+          return res.status(400).json({ error: "You have already used this coupon the maximum number of times" });
+        }
+      }
+
+      let rawAmount = coupon.valueType === "percent" ? Math.round((subtotal * coupon.value) / 100) : coupon.value;
+
+      if (coupon.maxDiscount && rawAmount > coupon.maxDiscount) {
+        rawAmount = coupon.maxDiscount;
+      }
+
+      if (rawAmount > subtotal) {
+        rawAmount = subtotal;
+      }
+
+      appliedCoupon = { id: coupon.id, code: coupon.code, rewardType: coupon.rewardType, discountAmount: rawAmount };
     }
 
     let deliveryFeeAmount = store.deliveryFeeBase;
@@ -3000,7 +3413,8 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
       deliveryFeeAmount = store.deliveryFeeBase + Math.round(distanceKm * store.deliveryFeePerKm);
     }
 
-    const totalAmount = subtotal + deliveryFeeAmount;
+    const discountAmount = appliedCoupon && appliedCoupon.rewardType === "discount" ? appliedCoupon.discountAmount : 0;
+    const totalAmount = subtotal + deliveryFeeAmount - discountAmount;
 
     const checkoutOtp = hasJewellery ? Math.floor(100000 + Math.random() * 900000).toString() : null;
 
@@ -3042,6 +3456,39 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
         });
       }
 
+      if (appliedCoupon) {
+        await tx.orm.public.CouponRedemption.create({
+          couponId: appliedCoupon.id,
+          userId: req.userId!,
+          orderId: newOrder.id,
+          amount: appliedCoupon.discountAmount,
+        });
+
+        const currentCoupon = await tx.orm.public.Coupon.where({ id: appliedCoupon.id }).first();
+
+        if (currentCoupon) {
+          await tx.orm.public.Coupon.where({ id: appliedCoupon.id }).update({
+            usedCount: currentCoupon.usedCount + 1,
+          });
+        }
+
+        if (appliedCoupon.rewardType === "cashback" && appliedCoupon.discountAmount > 0) {
+          const buyer = await tx.orm.public.User.where({ id: req.userId! }).first();
+          if (buyer) {
+            await tx.orm.public.User.where({ id: buyer.id }).update({
+              walletBalance: buyer.walletBalance + appliedCoupon.discountAmount,
+            });
+
+            await tx.orm.public.WalletTransaction.create({
+              amount: appliedCoupon.discountAmount,
+              type: "credit",
+              reason: "cashback",
+              userId: buyer.id,
+            });
+          }
+        }
+      }
+
       for (const item of validatedItems) {
         await tx.orm.public.OrderItem.create({
           orderId: newOrder.id,
@@ -3068,7 +3515,53 @@ app.post("/store-orders", requireAuth, async (req: AuthRequest, res) => {
       userId: store.sellerId,
     });
 
-    res.status(201).json({ ...order, items: validatedItems, subtotal, deliveryFeeAmount, totalAmount, devCheckoutOtp: hasJewellery ? checkoutOtp : undefined });
+    try {
+      const buyerForRisk = await db.orm.public.User.where({ id: req.userId! }).first();
+
+      if (buyerForRisk) {
+        const accountAgeMs = Date.now() - new Date(buyerForRisk.createdAt).getTime();
+        const oneDayMs = 24 * 60 * 60 * 1000;
+
+        if (accountAgeMs < oneDayMs && totalAmount > 5000) {
+          await db.orm.public.RiskFlag.create({
+            entityType: "order",
+            entityId: order.id,
+            reason: "High-value order from a newly created account",
+            severity: "high",
+          });
+        }
+
+        const pastOrders = await db.orm.public.Order.where({ buyerId: buyerForRisk.id, orderType: "store_order" }).all();
+        const previousOrders = pastOrders.filter((o: any) => o.id !== order.id);
+
+        if (previousOrders.length >= 3) {
+          const avgAmount = previousOrders.reduce((sum: number, o: any) => sum + o.amount, 0) / previousOrders.length;
+          if (avgAmount > 0 && totalAmount > avgAmount * 5) {
+            await db.orm.public.RiskFlag.create({
+              entityType: "order",
+              entityId: order.id,
+              reason: "Order amount far exceeds this buyer's usual order size",
+              severity: "medium",
+            });
+          }
+        }
+      }
+    } catch (riskError) {
+      console.error("Risk evaluation failed (non-blocking):", riskError);
+    }
+
+    res.status(201).json({
+      ...order,
+      items: validatedItems,
+      subtotal,
+      deliveryFeeAmount,
+      discountAmount,
+      totalAmount,
+      couponApplied: appliedCoupon
+        ? { code: appliedCoupon.code, rewardType: appliedCoupon.rewardType, amount: appliedCoupon.discountAmount }
+        : null,
+      devCheckoutOtp: hasJewellery ? checkoutOtp : undefined,
+    });
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("INSUFFICIENT_STOCK:")) {
       return res.status(400).json({ error: "One or more items went out of stock during checkout" });
@@ -4040,6 +4533,631 @@ app.post("/employee/tasks/:id/status", requireAuth, async (req: AuthRequest, res
     res.status(500).json({ error: "Something went wrong" });
   }
 });
+app.get("/orders/:id/invoice-data", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const orderId = Number(req.params.id);
+
+    const order = await db.orm.public.Order.where({ id: orderId }).first();
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.buyerId !== req.userId && order.sellerId !== req.userId) {
+      return res.status(403).json({ error: "You are not part of this order" });
+    }
+
+    const buyer = await db.orm.public.User.where({ id: order.buyerId }).first();
+    const seller = await db.orm.public.User.where({ id: order.sellerId }).first();
+
+    if (order.orderType !== "store_order") {
+      return res.status(200).json({
+        orderId: order.id,
+        orderType: order.orderType,
+        createdAt: order.createdAt,
+        buyerName: buyer?.name ?? "Unknown",
+        buyerEmail: buyer?.email ?? "",
+        sellerName: seller?.name ?? "Unknown",
+        sellerEmail: seller?.email ?? "",
+        isSimple: true,
+        grandTotal: order.amount,
+      });
+    }
+
+    const orderItems = await db.orm.public.OrderItem.where({ orderId: order.id }).all();
+    const gstRates = await db.orm.public.GstRate.where({}).all();
+
+    let subtotal = 0;
+    let totalGst = 0;
+
+    const items = await Promise.all(
+      orderItems.map(async (item) => {
+        const product = await db.orm.public.Product.where({ id: item.productId }).first();
+        const lineTotal = item.priceAtPurchase * item.quantity;
+        const category = product?.category ?? null;
+        const matchedRate = gstRates.find((r) => r.category === category);
+        const gstRatePercent = matchedRate ? matchedRate.ratePercent : 0;
+        const gstAmount = Math.round(lineTotal * (gstRatePercent / 100) * 100) / 100;
+
+        subtotal += lineTotal;
+        totalGst += gstAmount;
+
+        return {
+          name: product?.name ?? "Unknown product",
+          category: category ?? "uncategorized",
+          quantity: item.quantity,
+          unitPrice: item.priceAtPurchase,
+          lineTotal,
+          gstRatePercent,
+          gstAmount,
+        };
+      })
+    );
+
+    res.status(200).json({
+      orderId: order.id,
+      orderType: order.orderType,
+      createdAt: order.createdAt,
+      buyerName: buyer?.name ?? "Unknown",
+      buyerEmail: buyer?.email ?? "",
+      sellerName: seller?.name ?? "Unknown",
+      sellerEmail: seller?.email ?? "",
+      isSimple: false,
+      items,
+      subtotal,
+      totalGst,
+      grandTotal: subtotal + totalGst,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+app.post("/admin/settings/referral-reward", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const { amount } = req.body;
+
+    if (typeof amount !== "number" || amount < 0) {
+      return res.status(400).json({ error: "amount must be a non-negative number" });
+    }
+
+    const existing = await db.orm.public.PlatformSetting.where({ key: "referral_reward_amount" }).first();
+
+    if (existing) {
+      const updated = await db.orm.public.PlatformSetting.where({ id: existing.id }).update({ value: String(amount) });
+      return res.status(200).json(updated);
+    }
+
+    const setting = await db.orm.public.PlatformSetting.create({ key: "referral_reward_amount", value: String(amount) });
+    res.status(201).json(setting);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/admin/coupons", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const { code, description, rewardType, valueType, value, maxDiscount, minOrderAmount, usageLimit, perUserLimit, expiresAt } = req.body;
+
+    if (!code || typeof code !== "string") {
+      return res.status(400).json({ error: "code is required" });
+    }
+
+    if (rewardType !== "discount" && rewardType !== "cashback") {
+      return res.status(400).json({ error: "rewardType must be \"discount\" or \"cashback\"" });
+    }
+
+    if (valueType !== "flat" && valueType !== "percent") {
+      return res.status(400).json({ error: "valueType must be \"flat\" or \"percent\"" });
+    }
+
+    if (typeof value !== "number" || value <= 0) {
+      return res.status(400).json({ error: "value must be a positive number" });
+    }
+
+    const normalizedCode = code.trim().toUpperCase();
+
+    const existing = await db.orm.public.Coupon.where({ code: normalizedCode }).first();
+
+    if (existing) {
+      return res.status(400).json({ error: "A coupon with this code already exists" });
+    }
+
+    const coupon = await db.orm.public.Coupon.create({
+      code: normalizedCode,
+      description: description || null,
+      rewardType,
+      valueType,
+      value,
+      maxDiscount: maxDiscount ?? null,
+      minOrderAmount: minOrderAmount ?? null,
+      usageLimit: usageLimit ?? null,
+      perUserLimit: perUserLimit ?? 1,
+      expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null,
+    });
+
+    res.status(201).json(coupon);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/admin/coupons", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const coupons = await db.orm.public.Coupon.where({}).all();
+    res.status(200).json(coupons);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/admin/coupons/:id/toggle", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const couponId = Number(req.params.id);
+    const coupon = await db.orm.public.Coupon.where({ id: couponId }).first();
+
+    if (!coupon) {
+      return res.status(404).json({ error: "Coupon not found" });
+    }
+
+    const updated = await db.orm.public.Coupon.where({ id: couponId }).update({ isActive: !coupon.isActive });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/admin/stores", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const stores = await db.orm.public.Store.where({}).all();
+    const sellers = await db.orm.public.User.where({}).all();
+    const sellerNameById = new Map<number, string>();
+    sellers.forEach((u: any) => sellerNameById.set(u.id, u.name));
+
+    const result = stores.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      sellerId: s.sellerId,
+      sellerName: sellerNameById.get(s.sellerId) || `User #${s.sellerId}`,
+      isActive: s.isActive,
+      offersPrintService: s.offersPrintService,
+    }));
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/admin/stores/:id/toggle-active", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const storeId = Number(req.params.id);
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const updated = await db.orm.public.Store.where({ id: storeId }).update({ isActive: !store.isActive });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/admin/stores/:id/toggle-print-service", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const storeId = Number(req.params.id);
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const updated = await db.orm.public.Store.where({ id: storeId }).update({ offersPrintService: !store.offersPrintService });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/admin/risk-flags", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const flags = await db.orm.public.RiskFlag.where({}).all();
+    flags.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    res.status(200).json(flags);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/admin/risk-flags/:id/resolve", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const flagId = Number(req.params.id);
+    const flag = await db.orm.public.RiskFlag.where({ id: flagId }).first();
+
+    if (!flag) {
+      return res.status(404).json({ error: "Risk flag not found" });
+    }
+
+    const updated = await db.orm.public.RiskFlag.where({ id: flagId }).update({ resolved: !flag.resolved });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/admin/data-requests", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const requests = await db.orm.public.DataRequest.where({}).all();
+    requests.sort((a: any, b: any) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+
+    res.status(200).json(requests);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/admin/data-requests/:id/complete", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const requestId = Number(req.params.id);
+    const dataRequest = await db.orm.public.DataRequest.where({ id: requestId }).first();
+
+    if (!dataRequest) {
+      return res.status(404).json({ error: "Data request not found" });
+    }
+
+    if (dataRequest.type !== "deletion") {
+      return res.status(400).json({ error: "Only deletion requests can be completed this way" });
+    }
+
+    if (dataRequest.status !== "pending") {
+      return res.status(400).json({ error: "This request has already been processed" });
+    }
+
+    const targetUser = await db.orm.public.User.where({ id: dataRequest.userId }).first();
+
+    if (targetUser) {
+      const scrambledPassword = await bcrypt.hash(crypto.randomBytes(16).toString("hex"), 10);
+
+      await db.orm.public.User.where({ id: targetUser.id }).update({
+        email: `deleted-user-${targetUser.id}@deleted.local`,
+        name: "Deleted User",
+        phone: null,
+        address: null,
+        city: null,
+        password: scrambledPassword,
+      });
+    }
+
+    const updated = await db.orm.public.DataRequest.where({ id: requestId }).update({
+      status: "completed",
+      completedAt: new Date().toISOString(),
+    });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/admin/data-requests/:id/reject", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "admin") {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const requestId = Number(req.params.id);
+    const dataRequest = await db.orm.public.DataRequest.where({ id: requestId }).first();
+
+    if (!dataRequest) {
+      return res.status(404).json({ error: "Data request not found" });
+    }
+
+    if (dataRequest.status !== "pending") {
+      return res.status(400).json({ error: "This request has already been processed" });
+    }
+
+    const updated = await db.orm.public.DataRequest.where({ id: requestId }).update({ status: "rejected" });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/co-admin/benchmarks", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "co_admin") {
+      return res.status(403).json({ error: "Co-admin access required" });
+    }
+
+    const products = await db.orm.public.Product.where({ isActive: true }).all();
+    const stores = await db.orm.public.Store.where({}).all();
+    const ratings = await db.orm.public.ProductRating.where({}).all();
+    const orderItems = await db.orm.public.OrderItem.where({}).all();
+
+    const storeNameById = new Map<number, string>();
+    stores.forEach((s: any) => storeNameById.set(s.id, s.name));
+
+    const ratingsByProduct = new Map<number, number[]>();
+    ratings.forEach((r: any) => {
+      const list = ratingsByProduct.get(r.productId) || [];
+      list.push(r.rating);
+      ratingsByProduct.set(r.productId, list);
+    });
+
+    const unitsByProduct = new Map<number, number>();
+    orderItems.forEach((item: any) => {
+      unitsByProduct.set(item.productId, (unitsByProduct.get(item.productId) || 0) + item.quantity);
+    });
+
+    const categoryMap = new Map<string, any[]>();
+    products.forEach((p: any) => {
+      const category = p.category || "uncategorized";
+      const list = categoryMap.get(category) || [];
+      list.push(p);
+      categoryMap.set(category, list);
+    });
+
+    const categories = Array.from(categoryMap.entries()).map(([category, categoryProducts]) => {
+      const prices = categoryProducts.map((p: any) => p.price);
+      const storeIds = new Set(categoryProducts.map((p: any) => p.storeId));
+
+      const storeGroups = new Map<number, any[]>();
+      categoryProducts.forEach((p: any) => {
+        const list = storeGroups.get(p.storeId) || [];
+        list.push(p);
+        storeGroups.set(p.storeId, list);
+      });
+
+      const storeBreakdown = Array.from(storeGroups.entries()).map(([storeId, storeProducts]) => {
+        const storePrices = storeProducts.map((p: any) => p.price);
+        const allRatings: number[] = [];
+        let unitsSold = 0;
+
+        storeProducts.forEach((p: any) => {
+          const productRatings = ratingsByProduct.get(p.id) || [];
+          allRatings.push(...productRatings);
+          unitsSold += unitsByProduct.get(p.id) || 0;
+        });
+
+        const avgRating =
+          allRatings.length > 0 ? allRatings.reduce((sum, r) => sum + r, 0) / allRatings.length : null;
+
+        return {
+          storeId,
+          storeName: storeNameById.get(storeId) || `Store #${storeId}`,
+          productCount: storeProducts.length,
+          avgPrice: Math.round(storePrices.reduce((sum: number, price: number) => sum + price, 0) / storePrices.length),
+          avgRating,
+          unitsSold,
+        };
+      });
+
+      storeBreakdown.sort((a, b) => (b.avgRating ?? -1) - (a.avgRating ?? -1));
+
+      return {
+        category,
+        productCount: categoryProducts.length,
+        storeCount: storeIds.size,
+        avgPrice: Math.round(prices.reduce((sum: number, price: number) => sum + price, 0) / prices.length),
+        minPrice: Math.min(...prices),
+        maxPrice: Math.max(...prices),
+        stores: storeBreakdown,
+      };
+    });
+
+    categories.sort((a, b) => b.productCount - a.productCount);
+
+    res.status(200).json({ categories });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/co-admin/stores", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "co_admin") {
+      return res.status(403).json({ error: "Co-admin access required" });
+    }
+
+    const me = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!me?.city) {
+      return res.status(400).json({ error: "Your co-admin account has no assigned city" });
+    }
+
+    const cityUsers = await db.orm.public.User.where({ city: me.city }).all();
+    const cityUserIds = new Set(cityUsers.map((u: any) => u.id));
+    const sellerNameById = new Map<number, string>();
+    cityUsers.forEach((u: any) => sellerNameById.set(u.id, u.name));
+
+    const allStores = await db.orm.public.Store.where({}).all();
+    const scopedStores = allStores.filter((s: any) => cityUserIds.has(s.sellerId));
+
+    const result = scopedStores.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      sellerId: s.sellerId,
+      sellerName: sellerNameById.get(s.sellerId) || `User #${s.sellerId}`,
+      isActive: s.isActive,
+      offersPrintService: s.offersPrintService,
+    }));
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/co-admin/stores/:id/toggle-active", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "co_admin") {
+      return res.status(403).json({ error: "Co-admin access required" });
+    }
+
+    const me = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!me?.city) {
+      return res.status(400).json({ error: "Your co-admin account has no assigned city" });
+    }
+
+    const storeId = Number(req.params.id);
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const seller = await db.orm.public.User.where({ id: store.sellerId }).first();
+
+    if (seller?.city !== me.city) {
+      return res.status(403).json({ error: "This store is outside your city" });
+    }
+
+    const updated = await db.orm.public.Store.where({ id: storeId }).update({ isActive: !store.isActive });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/co-admin/stores/:id/toggle-print-service", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "co_admin") {
+      return res.status(403).json({ error: "Co-admin access required" });
+    }
+
+    const me = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!me?.city) {
+      return res.status(400).json({ error: "Your co-admin account has no assigned city" });
+    }
+
+    const storeId = Number(req.params.id);
+    const store = await db.orm.public.Store.where({ id: storeId }).first();
+
+    if (!store) {
+      return res.status(404).json({ error: "Store not found" });
+    }
+
+    const seller = await db.orm.public.User.where({ id: store.sellerId }).first();
+
+    if (seller?.city !== me.city) {
+      return res.status(403).json({ error: "This store is outside your city" });
+    }
+
+    const updated = await db.orm.public.Store.where({ id: storeId }).update({ offersPrintService: !store.offersPrintService });
+
+    res.status(200).json(updated);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/co-admin/settings/referral-reward", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    if (req.userRole !== "co_admin") {
+      return res.status(403).json({ error: "Co-admin access required" });
+    }
+
+    const { amount } = req.body;
+
+    if (typeof amount !== "number" || amount < 0) {
+      return res.status(400).json({ error: "amount must be a non-negative number" });
+    }
+
+    const existing = await db.orm.public.PlatformSetting.where({ key: "referral_reward_amount" }).first();
+
+    if (existing) {
+      const updated = await db.orm.public.PlatformSetting.where({ id: existing.id }).update({ value: String(amount) });
+      return res.status(200).json(updated);
+    }
+
+    const setting = await db.orm.public.PlatformSetting.create({ key: "referral_reward_amount", value: String(amount) });
+    res.status(201).json(setting);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/referral-reward", async (req, res) => {
+  try {
+    const setting = await db.orm.public.PlatformSetting.where({ key: "referral_reward_amount" }).first();
+    res.status(200).json({ amount: setting ? Number(setting.value) : 20 });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
 app.get("/store-orders/:id", requireAuth, async (req: AuthRequest, res) => {
   try {
     const orderId = Number(req.params.id);
@@ -4323,6 +5441,88 @@ app.get("/referral/mine", requireAuth, async (req: AuthRequest, res) => {
   try {
     const user = await db.orm.public.User.where({ id: req.userId! }).first();
     res.status(200).json({ referralCode: user?.referralCode });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/data-requests/export", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const user = await db.orm.public.User.where({ id: req.userId! }).first();
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const safeProfile = {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      phone: user.phone,
+      address: user.address,
+      city: user.city,
+      role: user.role,
+      walletBalance: user.walletBalance,
+      referralCode: user.referralCode,
+      createdAt: user.createdAt,
+    };
+
+    const ordersAsBuyer = await db.orm.public.Order.where({ buyerId: user.id }).all();
+    const ordersAsSeller = await db.orm.public.Order.where({ sellerId: user.id }).all();
+    const reviewsGiven = await db.orm.public.Review.where({ reviewerId: user.id }).all();
+    const reviewsReceived = await db.orm.public.Review.where({ revieweeId: user.id }).all();
+    const walletTransactions = await db.orm.public.WalletTransaction.where({ userId: user.id }).all();
+    const stores = await db.orm.public.Store.where({ sellerId: user.id }).all();
+
+    await db.orm.public.DataRequest.create({
+      userId: user.id,
+      type: "export",
+      status: "completed",
+      notes: "Self-service data export",
+      completedAt: new Date().toISOString(),
+    });
+
+    res.status(200).json({
+      profile: safeProfile,
+      ordersAsBuyer,
+      ordersAsSeller,
+      reviewsGiven,
+      reviewsReceived,
+      walletTransactions,
+      stores,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.post("/data-requests/deletion", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const { reason } = req.body;
+
+    const created = await db.orm.public.DataRequest.create({
+      userId: req.userId!,
+      type: "deletion",
+      status: "pending",
+      notes: typeof reason === "string" && reason.trim() ? reason.trim() : null,
+      completedAt: null,
+    });
+
+    res.status(201).json(created);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.get("/data-requests/me", requireAuth, async (req: AuthRequest, res) => {
+  try {
+    const requests = await db.orm.public.DataRequest.where({ userId: req.userId! }).all();
+    requests.sort((a: any, b: any) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime());
+
+    res.status(200).json(requests);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });

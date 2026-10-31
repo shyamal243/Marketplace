@@ -1,0 +1,41 @@
+[
+  {
+    "id": "table.riskFlag",
+    "label": "Create table \"riskFlag\"",
+    "summary": "Creates table \"riskFlag\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "riskFlag"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"riskFlag\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"riskFlag\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"riskFlag\"",
+        "sql": "CREATE TABLE \"public\".\"riskFlag\" (\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"entityId\" int4 NOT NULL,\n  \"entityType\" text NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"reason\" text NOT NULL,\n  \"resolved\" bool DEFAULT false NOT NULL,\n  \"severity\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"riskFlag\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"riskFlag\""
+        ]
+      }
+    ]
+  }
+]

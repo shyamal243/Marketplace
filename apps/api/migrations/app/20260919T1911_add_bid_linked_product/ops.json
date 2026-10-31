@@ -1,0 +1,125 @@
+[
+  {
+    "id": "column.public.bid.linkedProductId",
+    "label": "Add column \"linkedProductId\" to \"bid\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "linkedProductId",
+        "table": "bid"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"linkedProductId\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "bid",
+          "linkedProductId"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"linkedProductId\"",
+        "sql": "ALTER TABLE \"public\".\"bid\" ADD COLUMN \"linkedProductId\" int4"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"linkedProductId\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "bid",
+          "linkedProductId"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.bid.bid_linkedProductId_idx_ec65c60d",
+    "label": "Create index \"bid_linkedProductId_idx_ec65c60d\" on \"bid\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "bid_linkedProductId_idx_ec65c60d",
+        "table": "bid"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"bid_linkedProductId_idx_ec65c60d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bid_linkedProductId_idx_ec65c60d\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"bid_linkedProductId_idx_ec65c60d\"",
+        "sql": "CREATE INDEX \"bid_linkedProductId_idx_ec65c60d\" ON \"public\".\"bid\" (\"linkedProductId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"bid_linkedProductId_idx_ec65c60d\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"bid_linkedProductId_idx_ec65c60d\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.bid.bid_linkedProductId_fkey",
+    "label": "Add foreign key \"bid_linkedProductId_fkey\" on \"bid\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "bid_linkedProductId_fkey",
+        "table": "bid"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"bid_linkedProductId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bid_linkedProductId_fkey",
+          "public",
+          "\"public\".\"bid\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"bid_linkedProductId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"bid\"\nADD CONSTRAINT \"bid_linkedProductId_fkey\"\nFOREIGN KEY (\"linkedProductId\")\nREFERENCES \"public\".\"product\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"bid_linkedProductId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "bid_linkedProductId_fkey",
+          "public",
+          "\"public\".\"bid\""
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,284 @@
+[
+  {
+    "id": "table.coupon",
+    "label": "Create table \"coupon\"",
+    "summary": "Creates table \"coupon\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "coupon"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"coupon\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"coupon\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"coupon\"",
+        "sql": "CREATE TABLE \"public\".\"coupon\" (\n  \"code\" text NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"expiresAt\" timestamptz,\n  \"id\" SERIAL NOT NULL,\n  \"isActive\" bool DEFAULT true NOT NULL,\n  \"maxDiscount\" int4,\n  \"minOrderAmount\" int4,\n  \"perUserLimit\" int4 DEFAULT 1,\n  \"rewardType\" text NOT NULL,\n  \"usageLimit\" int4,\n  \"usedCount\" int4 DEFAULT 0 NOT NULL,\n  \"value\" int4 NOT NULL,\n  \"valueType\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"coupon\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"coupon\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.couponRedemption",
+    "label": "Create table \"couponRedemption\"",
+    "summary": "Creates table \"couponRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "couponRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"couponRedemption\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"couponRedemption\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"couponRedemption\"",
+        "sql": "CREATE TABLE \"public\".\"couponRedemption\" (\n  \"amount\" int4 NOT NULL,\n  \"couponId\" int4 NOT NULL,\n  \"createdAt\" timestamptz DEFAULT (now()) NOT NULL,\n  \"id\" SERIAL NOT NULL,\n  \"orderId\" int4 NOT NULL,\n  \"userId\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"couponRedemption\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"couponRedemption\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "unique.coupon.coupon_code_key",
+    "label": "Add unique constraint on \"coupon\" (code)",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "unique",
+        "name": "coupon_code_key",
+        "table": "coupon"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure constraint \"coupon_code_key\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "coupon_code_key",
+          "public",
+          "\"public\".\"coupon\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add unique constraint \"coupon_code_key\"",
+        "sql": "ALTER TABLE \"public\".\"coupon\" ADD CONSTRAINT \"coupon_code_key\" UNIQUE (\"code\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify constraint \"coupon_code_key\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "coupon_code_key",
+          "public",
+          "\"public\".\"coupon\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.couponRedemption.couponRedemption_couponId_idx_a9dd19dc",
+    "label": "Create index \"couponRedemption_couponId_idx_a9dd19dc\" on \"couponRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "couponRedemption_couponId_idx_a9dd19dc",
+        "table": "couponRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"couponRedemption_couponId_idx_a9dd19dc\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"couponRedemption_couponId_idx_a9dd19dc\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"couponRedemption_couponId_idx_a9dd19dc\"",
+        "sql": "CREATE INDEX \"couponRedemption_couponId_idx_a9dd19dc\" ON \"public\".\"couponRedemption\" (\"couponId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"couponRedemption_couponId_idx_a9dd19dc\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"couponRedemption_couponId_idx_a9dd19dc\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.couponRedemption.couponRedemption_userId_idx_a489d58a",
+    "label": "Create index \"couponRedemption_userId_idx_a489d58a\" on \"couponRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "couponRedemption_userId_idx_a489d58a",
+        "table": "couponRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"couponRedemption_userId_idx_a489d58a\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"couponRedemption_userId_idx_a489d58a\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"couponRedemption_userId_idx_a489d58a\"",
+        "sql": "CREATE INDEX \"couponRedemption_userId_idx_a489d58a\" ON \"public\".\"couponRedemption\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"couponRedemption_userId_idx_a489d58a\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"couponRedemption_userId_idx_a489d58a\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.couponRedemption.couponRedemption_couponId_fkey",
+    "label": "Add foreign key \"couponRedemption_couponId_fkey\" on \"couponRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "couponRedemption_couponId_fkey",
+        "table": "couponRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"couponRedemption_couponId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "couponRedemption_couponId_fkey",
+          "public",
+          "\"public\".\"couponRedemption\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"couponRedemption_couponId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"couponRedemption\"\nADD CONSTRAINT \"couponRedemption_couponId_fkey\"\nFOREIGN KEY (\"couponId\")\nREFERENCES \"public\".\"coupon\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"couponRedemption_couponId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "couponRedemption_couponId_fkey",
+          "public",
+          "\"public\".\"couponRedemption\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.couponRedemption.couponRedemption_userId_fkey",
+    "label": "Add foreign key \"couponRedemption_userId_fkey\" on \"couponRedemption\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "couponRedemption_userId_fkey",
+        "table": "couponRedemption"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"couponRedemption_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "couponRedemption_userId_fkey",
+          "public",
+          "\"public\".\"couponRedemption\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"couponRedemption_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"couponRedemption\"\nADD CONSTRAINT \"couponRedemption_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"user\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"couponRedemption_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "couponRedemption_userId_fkey",
+          "public",
+          "\"public\".\"couponRedemption\""
+        ]
+      }
+    ]
+  }
+]

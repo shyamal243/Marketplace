@@ -13,12 +13,21 @@ interface Demand {
   buyerId: number;
 }
 
+interface MyProduct {
+  id: number;
+  name: string;
+  price: number;
+  storeId: number;
+}
+
 interface Bid {
   id: number;
   amount: number;
   message: string | null;
   status: string;
   sellerId: number;
+  linkedProductId: number | null;
+  linkedProduct: MyProduct | null;
 }
 
 interface User {
@@ -42,6 +51,8 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [myProducts, setMyProducts] = useState<MyProduct[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState("");
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -49,6 +60,22 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
 
     loadData();
   }, [id]);
+
+  useEffect(() => {
+    if (user && user.role === "seller") {
+      loadMyProducts();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  async function loadMyProducts() {
+    try {
+      const data = await apiFetch("/products/mine");
+      setMyProducts(data);
+    } catch {
+      // not critical to the page - just means no product picker is shown
+    }
+  }
 
   async function loadData() {
     setLoading(true);
@@ -81,10 +108,12 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
           demandId: Number(id),
           amount: Number(bidAmount),
           message: bidMessage || undefined,
+          productId: selectedProductId ? Number(selectedProductId) : undefined,
         }),
       });
       setBidAmount("");
       setBidMessage("");
+      setSelectedProductId("");
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -275,6 +304,20 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
                 placeholder="Message (optional)"
                 className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
               />
+              {myProducts.length > 0 && (
+                <select
+                  value={selectedProductId}
+                  onChange={(e) => setSelectedProductId(e.target.value)}
+                  className="w-full rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                >
+                  <option value="">Link one of your products (optional)</option>
+                  {myProducts.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} - â‚¹{p.price}
+                    </option>
+                  ))}
+                </select>
+              )}
               <button
                 type="submit"
                 disabled={submitting}
@@ -303,6 +346,14 @@ export default function DemandDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                   {bid.message && (
                     <p className="mt-2 font-body text-sm text-rv-text-dim">{bid.message}</p>
+                  )}
+                  {bid.linkedProduct && (
+                    <a
+                      href={`/stores/${bid.linkedProduct.storeId}`}
+                      className="mt-2 inline-block rounded-md border border-rv-cyan/30 bg-rv-cyan/10 px-3 py-1.5 font-body text-xs text-rv-cyan transition hover:bg-rv-cyan/20"
+                    >
+                      Linked product: {bid.linkedProduct.name} (â‚¹{bid.linkedProduct.price}) - view in store â†’
+                    </a>
                   )}
                   {bid.status === "pending" && (
                     <div className="mt-4 flex gap-2">

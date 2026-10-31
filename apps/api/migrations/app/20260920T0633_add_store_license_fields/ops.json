@@ -1,0 +1,86 @@
+[
+  {
+    "id": "column.public.store.businessRegistrationNumber",
+    "label": "Add column \"businessRegistrationNumber\" to \"store\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "businessRegistrationNumber",
+        "table": "store"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"businessRegistrationNumber\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "store",
+          "businessRegistrationNumber"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"businessRegistrationNumber\"",
+        "sql": "ALTER TABLE \"public\".\"store\" ADD COLUMN \"businessRegistrationNumber\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"businessRegistrationNumber\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "store",
+          "businessRegistrationNumber"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "column.public.store.fssaiLicenseNumber",
+    "label": "Add column \"fssaiLicenseNumber\" to \"store\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "column",
+        "name": "fssaiLicenseNumber",
+        "table": "store"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure column \"fssaiLicenseNumber\" is missing",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "store",
+          "fssaiLicenseNumber"
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add column \"fssaiLicenseNumber\"",
+        "sql": "ALTER TABLE \"public\".\"store\" ADD COLUMN \"fssaiLicenseNumber\" text"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify column \"fssaiLicenseNumber\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"information_schema\".\"columns\" WHERE (\"table_schema\" = $1 AND \"table_name\" = $2 AND \"column_name\" = $3)) AS \"result\"",
+        "params": [
+          "public",
+          "store",
+          "fssaiLicenseNumber"
+        ]
+      }
+    ]
+  }
+]

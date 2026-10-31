@@ -1,0 +1,122 @@
+[
+  {
+    "id": "table.hygienePhoto",
+    "label": "Create table \"hygienePhoto\"",
+    "summary": "Creates table \"hygienePhoto\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "hygienePhoto"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"hygienePhoto\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"hygienePhoto\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"hygienePhoto\"",
+        "sql": "CREATE TABLE \"public\".\"hygienePhoto\" (\n  \"id\" SERIAL NOT NULL,\n  \"photoPath\" text NOT NULL,\n  \"storeId\" int4 NOT NULL,\n  \"uploadedAt\" timestamptz DEFAULT (now()) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"hygienePhoto\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"hygienePhoto\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.hygienePhoto.hygienePhoto_storeId_idx_c545737d",
+    "label": "Create index \"hygienePhoto_storeId_idx_c545737d\" on \"hygienePhoto\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "hygienePhoto_storeId_idx_c545737d",
+        "table": "hygienePhoto"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"hygienePhoto_storeId_idx_c545737d\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"hygienePhoto_storeId_idx_c545737d\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"hygienePhoto_storeId_idx_c545737d\"",
+        "sql": "CREATE INDEX \"hygienePhoto_storeId_idx_c545737d\" ON \"public\".\"hygienePhoto\" (\"storeId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"hygienePhoto_storeId_idx_c545737d\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"hygienePhoto_storeId_idx_c545737d\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.hygienePhoto.hygienePhoto_storeId_fkey",
+    "label": "Add foreign key \"hygienePhoto_storeId_fkey\" on \"hygienePhoto\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "hygienePhoto_storeId_fkey",
+        "table": "hygienePhoto"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"hygienePhoto_storeId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "hygienePhoto_storeId_fkey",
+          "public",
+          "\"public\".\"hygienePhoto\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"hygienePhoto_storeId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"hygienePhoto\"\nADD CONSTRAINT \"hygienePhoto_storeId_fkey\"\nFOREIGN KEY (\"storeId\")\nREFERENCES \"public\".\"store\" (\"id\")"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"hygienePhoto_storeId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "hygienePhoto_storeId_fkey",
+          "public",
+          "\"public\".\"hygienePhoto\""
+        ]
+      }
+    ]
+  }
+]

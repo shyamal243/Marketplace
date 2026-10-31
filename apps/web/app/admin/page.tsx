@@ -61,13 +61,41 @@ export default function AdminPage() {
   const [commissionPercent, setCommissionPercent] = useState("");
   const [gstCategory, setGstCategory] = useState("");
   const [gstRate, setGstRate] = useState("");
+  const [referralReward, setReferralReward] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"users" | "orders" | "kyc" | "tasks" | "settings">("users");
+  const [tab, setTab] = useState<"users" | "orders" | "kyc" | "tasks" | "settings" | "coupons" | "risk" | "privacy" | "stores">("users");
 
   const [promotingUserId, setPromotingUserId] = useState<number | null>(null);
   const [promoteCity, setPromoteCity] = useState("");
+
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [loadingCoupons, setLoadingCoupons] = useState(false);
+  const [couponError, setCouponError] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDescription, setCouponDescription] = useState("");
+  const [couponRewardType, setCouponRewardType] = useState<"discount" | "cashback">("discount");
+  const [couponValueType, setCouponValueType] = useState<"flat" | "percent">("flat");
+  const [couponValue, setCouponValue] = useState("");
+  const [couponMaxDiscount, setCouponMaxDiscount] = useState("");
+  const [couponMinOrder, setCouponMinOrder] = useState("");
+  const [couponUsageLimit, setCouponUsageLimit] = useState("");
+  const [couponPerUserLimit, setCouponPerUserLimit] = useState("1");
+  const [couponExpiresAt, setCouponExpiresAt] = useState("");
+  const [creatingCoupon, setCreatingCoupon] = useState(false);
+
+  const [riskFlags, setRiskFlags] = useState<any[]>([]);
+  const [loadingRiskFlags, setLoadingRiskFlags] = useState(false);
+  const [riskError, setRiskError] = useState("");
+
+  const [dataRequests, setDataRequests] = useState<any[]>([]);
+  const [loadingDataRequests, setLoadingDataRequests] = useState(false);
+  const [dataRequestsError, setDataRequestsError] = useState("");
+
+  const [stores, setStores] = useState<any[]>([]);
+  const [loadingStores, setLoadingStores] = useState(false);
+  const [storesError, setStoresError] = useState("");
 
   const [taskAssignedToId, setTaskAssignedToId] = useState("");
   const [taskType, setTaskType] = useState("verify_store");
@@ -79,6 +107,22 @@ export default function AdminPage() {
   useEffect(() => {
     loadAll();
   }, []);
+
+  useEffect(() => {
+    if (tab === "coupons") {
+      loadCoupons();
+    }
+    if (tab === "risk") {
+      loadRiskFlags();
+    }
+    if (tab === "privacy") {
+      loadDataRequests();
+    }
+    if (tab === "stores") {
+      loadStores();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   async function loadAll() {
     setLoading(true);
@@ -254,6 +298,170 @@ export default function AdminPage() {
 
   const employees = users.filter((u) => u.role === "employee");
 
+  async function handleSetReferralReward(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+    try {
+      await apiFetch("/admin/settings/referral-reward", {
+        method: "POST",
+        body: JSON.stringify({ amount: Number(referralReward) }),
+      });
+      setMessage("Referral reward updated.");
+      setReferralReward("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
+  async function loadCoupons() {
+    setLoadingCoupons(true);
+    setCouponError("");
+    try {
+      const data = await apiFetch("/admin/coupons");
+      setCoupons(data);
+    } catch (err) {
+      setCouponError(err instanceof Error ? err.message : "Failed to load coupons");
+    } finally {
+      setLoadingCoupons(false);
+    }
+  }
+
+  async function handleCreateCoupon(e: React.FormEvent) {
+    e.preventDefault();
+    setCouponError("");
+    setCreatingCoupon(true);
+    try {
+      await apiFetch("/admin/coupons", {
+        method: "POST",
+        body: JSON.stringify({
+          code: couponCode,
+          description: couponDescription || undefined,
+          rewardType: couponRewardType,
+          valueType: couponValueType,
+          value: Number(couponValue),
+          maxDiscount: couponMaxDiscount ? Number(couponMaxDiscount) : undefined,
+          minOrderAmount: couponMinOrder ? Number(couponMinOrder) : undefined,
+          usageLimit: couponUsageLimit ? Number(couponUsageLimit) : undefined,
+          perUserLimit: couponPerUserLimit ? Number(couponPerUserLimit) : undefined,
+          expiresAt: couponExpiresAt || undefined,
+        }),
+      });
+      setCouponCode("");
+      setCouponDescription("");
+      setCouponValue("");
+      setCouponMaxDiscount("");
+      setCouponMinOrder("");
+      setCouponUsageLimit("");
+      setCouponPerUserLimit("1");
+      setCouponExpiresAt("");
+      await loadCoupons();
+    } catch (err) {
+      setCouponError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setCreatingCoupon(false);
+    }
+  }
+
+  async function handleToggleCoupon(couponId: number) {
+    setCouponError("");
+    try {
+      await apiFetch(`/admin/coupons/${couponId}/toggle`, { method: "POST" });
+      await loadCoupons();
+    } catch (err) {
+      setCouponError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
+  async function loadRiskFlags() {
+    setLoadingRiskFlags(true);
+    setRiskError("");
+    try {
+      const data = await apiFetch("/admin/risk-flags");
+      setRiskFlags(data);
+    } catch (err) {
+      setRiskError(err instanceof Error ? err.message : "Failed to load risk flags");
+    } finally {
+      setLoadingRiskFlags(false);
+    }
+  }
+
+  async function handleResolveRiskFlag(flagId: number) {
+    setRiskError("");
+    try {
+      await apiFetch(`/admin/risk-flags/${flagId}/resolve`, { method: "POST" });
+      await loadRiskFlags();
+    } catch (err) {
+      setRiskError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
+  async function loadDataRequests() {
+    setLoadingDataRequests(true);
+    setDataRequestsError("");
+    try {
+      const data = await apiFetch("/admin/data-requests");
+      setDataRequests(data);
+    } catch (err) {
+      setDataRequestsError(err instanceof Error ? err.message : "Failed to load data requests");
+    } finally {
+      setLoadingDataRequests(false);
+    }
+  }
+
+  async function handleCompleteDataRequest(requestId: number) {
+    setDataRequestsError("");
+    try {
+      await apiFetch(`/admin/data-requests/${requestId}/complete`, { method: "POST" });
+      await loadDataRequests();
+    } catch (err) {
+      setDataRequestsError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
+  async function handleRejectDataRequest(requestId: number) {
+    setDataRequestsError("");
+    try {
+      await apiFetch(`/admin/data-requests/${requestId}/reject`, { method: "POST" });
+      await loadDataRequests();
+    } catch (err) {
+      setDataRequestsError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
+  async function loadStores() {
+    setLoadingStores(true);
+    setStoresError("");
+    try {
+      const data = await apiFetch("/admin/stores");
+      setStores(data);
+    } catch (err) {
+      setStoresError(err instanceof Error ? err.message : "Failed to load stores");
+    } finally {
+      setLoadingStores(false);
+    }
+  }
+
+  async function handleToggleStoreActive(storeId: number) {
+    setStoresError("");
+    try {
+      await apiFetch(`/admin/stores/${storeId}/toggle-active`, { method: "POST" });
+      await loadStores();
+    } catch (err) {
+      setStoresError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
+  async function handleTogglePrintService(storeId: number) {
+    setStoresError("");
+    try {
+      await apiFetch(`/admin/stores/${storeId}/toggle-print-service`, { method: "POST" });
+      await loadStores();
+    } catch (err) {
+      setStoresError(err instanceof Error ? err.message : "Something went wrong");
+    }
+  }
+
   if (loading) {
     return <div className="min-h-screen bg-rv-bg px-8 py-12 text-rv-text md:px-16">Loading...</div>;
   }
@@ -287,7 +495,7 @@ export default function AdminPage() {
         )}
 
         <div className="mt-6 flex flex-wrap gap-2">
-          {(["users", "orders", "kyc", "tasks", "settings"] as const).map((t) => (
+          {(["users", "orders", "kyc", "tasks", "settings", "coupons", "risk", "privacy", "stores"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -301,6 +509,259 @@ export default function AdminPage() {
             </button>
           ))}
         </div>
+
+        {tab === "risk" && (
+          <div className="mt-6 flex flex-col gap-2">
+            {riskError && (
+              <p className="rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-2 font-body text-sm text-rv-danger">{riskError}</p>
+            )}
+            {loadingRiskFlags && <p className="font-body text-sm text-rv-text-dim">Loading risk flags...</p>}
+            {!loadingRiskFlags && riskFlags.length === 0 && (
+              <p className="font-body text-sm text-rv-text-dim">No risk flags. Nothing suspicious detected yet.</p>
+            )}
+            {riskFlags.map((f) => (
+              <div key={f.id} className="glass-panel flex items-center justify-between px-5 py-3">
+                <div>
+                  <p className="font-body text-sm text-rv-text">
+                    {f.entityType} #{f.entityId} - {f.reason}
+                  </p>
+                  <p className="font-body text-xs text-rv-text-dim">
+                    Severity: <span className={f.severity === "high" ? "text-rv-danger" : "text-rv-cyan"}>{f.severity}</span>
+                    {" - "}
+                    {f.resolved ? "Resolved" : "Open"}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleResolveRiskFlag(f.id)}
+                  className="rounded-md border border-rv-border px-3 py-1.5 font-body text-sm text-rv-text transition hover:hud-border hover:text-rv-cyan"
+                >
+                  {f.resolved ? "Reopen" : "Mark resolved"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === "privacy" && (
+          <div className="mt-6 flex flex-col gap-2">
+            {dataRequestsError && (
+              <p className="rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-2 font-body text-sm text-rv-danger">{dataRequestsError}</p>
+            )}
+            {loadingDataRequests && <p className="font-body text-sm text-rv-text-dim">Loading data requests...</p>}
+            {!loadingDataRequests && dataRequests.length === 0 && (
+              <p className="font-body text-sm text-rv-text-dim">No data requests yet.</p>
+            )}
+            {dataRequests.map((r) => (
+              <div key={r.id} className="glass-panel flex items-center justify-between px-5 py-3">
+                <div>
+                  <p className="font-body text-sm text-rv-text">
+                    User #{r.userId} - {r.type}
+                    {r.notes ? ` - "${r.notes}"` : ""}
+                  </p>
+                  <p className="font-body text-xs text-rv-text-dim">
+                    Requested {new Date(r.requestedAt).toLocaleString()}
+                    {" - "}
+                    <span
+                      className={
+                        r.status === "completed"
+                          ? "text-rv-cyan"
+                          : r.status === "rejected"
+                          ? "text-rv-danger"
+                          : "text-rv-text-dim"
+                      }
+                    >
+                      {r.status}
+                    </span>
+                  </p>
+                </div>
+                {r.type === "deletion" && r.status === "pending" && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleCompleteDataRequest(r.id)}
+                      className="rounded-md border border-rv-border px-3 py-1.5 font-body text-sm text-rv-text transition hover:hud-border hover:text-rv-cyan"
+                    >
+                      Approve &amp; anonymize
+                    </button>
+                    <button
+                      onClick={() => handleRejectDataRequest(r.id)}
+                      className="rounded-md border border-rv-danger/50 px-3 py-1.5 font-body text-sm text-rv-danger transition hover:bg-rv-danger/10"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === "stores" && (
+          <div className="mt-6 flex flex-col gap-2">
+            <p className="mb-2 font-body text-xs text-rv-text-dim">
+              Toggle a store off to hide it from buyers entirely, or toggle off just its print service while keeping
+              the store open.
+            </p>
+            {storesError && (
+              <p className="rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-2 font-body text-sm text-rv-danger">{storesError}</p>
+            )}
+            {loadingStores && <p className="font-body text-sm text-rv-text-dim">Loading stores...</p>}
+            {!loadingStores && stores.length === 0 && (
+              <p className="font-body text-sm text-rv-text-dim">No stores found.</p>
+            )}
+            {stores.map((s) => (
+              <div key={s.id} className="glass-panel flex items-center justify-between px-5 py-3">
+                <div>
+                  <p className="font-body text-sm text-rv-text">{s.name}</p>
+                  <p className="font-body text-xs text-rv-text-dim">
+                    Seller: {s.sellerName} Â·{" "}
+                    <span className={s.isActive ? "text-rv-cyan" : "text-rv-danger"}>{s.isActive ? "Active" : "Deactivated"}</span>
+                    {" Â· Print service: "}
+                    <span className={s.offersPrintService ? "text-rv-cyan" : "text-rv-text-dim"}>
+                      {s.offersPrintService ? "On" : "Off"}
+                    </span>
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleToggleStoreActive(s.id)}
+                    className="rounded-md border border-rv-border px-3 py-1.5 font-body text-sm text-rv-text transition hover:hud-border hover:text-rv-cyan"
+                  >
+                    {s.isActive ? "Deactivate store" : "Activate store"}
+                  </button>
+                  <button
+                    onClick={() => handleTogglePrintService(s.id)}
+                    className="rounded-md border border-rv-border px-3 py-1.5 font-body text-sm text-rv-text transition hover:hud-border hover:text-rv-cyan"
+                  >
+                    {s.offersPrintService ? "Turn off print service" : "Turn on print service"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === "coupons" && (
+          <div className="mt-6 flex flex-col gap-4">
+            <form onSubmit={handleCreateCoupon} className="glass-panel p-6">
+              <h2 className="font-display text-base font-semibold text-rv-text">Create a coupon</h2>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <input
+                  type="text"
+                  required
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  placeholder="Code (e.g. WELCOME50)"
+                  className="rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                />
+                <input
+                  type="text"
+                  value={couponDescription}
+                  onChange={(e) => setCouponDescription(e.target.value)}
+                  placeholder="Description (optional)"
+                  className="rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                />
+                <select
+                  value={couponRewardType}
+                  onChange={(e) => setCouponRewardType(e.target.value as "discount" | "cashback")}
+                  className="rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                >
+                  <option value="discount">Discount (off order total)</option>
+                  <option value="cashback">Cashback (credited to wallet)</option>
+                </select>
+                <select
+                  value={couponValueType}
+                  onChange={(e) => setCouponValueType(e.target.value as "flat" | "percent")}
+                  className="rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                >
+                  <option value="flat">Flat amount (Rs.)</option>
+                  <option value="percent">Percentage (%)</option>
+                </select>
+                <input
+                  type="number"
+                  min={1}
+                  required
+                  value={couponValue}
+                  onChange={(e) => setCouponValue(e.target.value)}
+                  placeholder="Value"
+                  className="rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  value={couponMaxDiscount}
+                  onChange={(e) => setCouponMaxDiscount(e.target.value)}
+                  placeholder="Max discount (Rs., optional, for %)"
+                  className="rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  value={couponMinOrder}
+                  onChange={(e) => setCouponMinOrder(e.target.value)}
+                  placeholder="Minimum order amount (optional)"
+                  className="rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  value={couponUsageLimit}
+                  onChange={(e) => setCouponUsageLimit(e.target.value)}
+                  placeholder="Total usage limit (optional)"
+                  className="rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  value={couponPerUserLimit}
+                  onChange={(e) => setCouponPerUserLimit(e.target.value)}
+                  placeholder="Per-user limit (default 1)"
+                  className="rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                />
+                <input
+                  type="date"
+                  value={couponExpiresAt}
+                  onChange={(e) => setCouponExpiresAt(e.target.value)}
+                  className="rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                />
+              </div>
+              {couponError && (
+                <p className="mt-3 rounded-md bg-rv-danger/10 border border-rv-danger/30 px-4 py-2 font-body text-sm text-rv-danger">{couponError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={creatingCoupon}
+                className="mt-4 rounded-md bg-rv-magenta px-4 py-2.5 font-body font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90 disabled:opacity-60"
+              >
+                {creatingCoupon ? "Creating..." : "Create coupon"}
+              </button>
+            </form>
+
+            <div className="flex flex-col gap-2">
+              {loadingCoupons && <p className="font-body text-sm text-rv-text-dim">Loading coupons...</p>}
+              {!loadingCoupons && coupons.length === 0 && (
+                <p className="font-body text-sm text-rv-text-dim">No coupons created yet.</p>
+              )}
+              {coupons.map((c) => (
+                <div key={c.id} className="glass-panel flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="font-body text-sm text-rv-text">
+                      {c.code} - {c.rewardType} - {c.valueType === "percent" ? `${c.value}%` : `Rs.${c.value}`}
+                    </p>
+                    <p className="font-body text-xs text-rv-text-dim">
+                      Used {c.usedCount}{c.usageLimit ? ` / ${c.usageLimit}` : ""} - {c.isActive ? "Active" : "Inactive"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleToggleCoupon(c.id)}
+                    className="rounded-md border border-rv-border px-3 py-1.5 font-body text-sm text-rv-text transition hover:hud-border hover:text-rv-cyan"
+                  >
+                    {c.isActive ? "Deactivate" : "Activate"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {tab === "users" && (
           <div className="mt-6 flex flex-col gap-2">
@@ -578,6 +1039,27 @@ export default function AdminPage() {
                   onChange={(e) => setGstRate(e.target.value)}
                   placeholder="Rate %"
                   className="w-24 rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
+                />
+                <button type="submit" className="rounded-md bg-rv-magenta px-4 py-2 font-body text-sm font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90">
+                  Save
+                </button>
+              </div>
+            </form>
+
+            <form onSubmit={handleSetReferralReward} className="glass-panel p-6">
+              <h2 className="font-display text-base font-semibold text-rv-text">Referral reward (₹, each side)</h2>
+              <p className="mt-1 font-body text-xs text-rv-text-dim">
+                Both the referrer and the new signup receive this amount when a referral code is used.
+              </p>
+              <div className="mt-3 flex gap-3">
+                <input
+                  type="number"
+                  min={0}
+                  required
+                  value={referralReward}
+                  onChange={(e) => setReferralReward(e.target.value)}
+                  placeholder="e.g. 20"
+                  className="flex-1 rounded-md border border-rv-border bg-rv-panel px-3 py-2 font-body text-rv-text outline-none focus:border-rv-cyan focus:shadow-hud-glow"
                 />
                 <button type="submit" className="rounded-md bg-rv-magenta px-4 py-2 font-body text-sm font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90">
                   Save

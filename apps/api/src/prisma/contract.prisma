@@ -6,7 +6,7 @@ model User {
   name                   String
   phone                  String?
   address                String?
-  city              String?
+  city                   String?
   role                   String               @default("buyer") // "buyer", "seller", "admin", "delivery", "professional"
   demands                Demand[]
   bids                   Bid[]
@@ -31,10 +31,11 @@ model User {
   currentLatitude        Float?
   currentLongitude       Float?
   favorites              Favorite[]
-  professionalSkills      ProfessionalSkill[]
-  storeAccesses           StoreAccess[]
-  assignedTasks           Task[]              @relation("AssignedTasks")
-  createdTasks            Task[]              @relation("CreatedTasks")
+  couponRedemptions      CouponRedemption[]
+  professionalSkills     ProfessionalSkill[]
+  storeAccesses          StoreAccess[]
+  assignedTasks          Task[]               @relation("AssignedTasks")
+  createdTasks           Task[]               @relation("CreatedTasks")
   referralCode           String?              @unique
   referredBy             Int?
   referralRewarded       Boolean              @default(false)
@@ -66,79 +67,81 @@ model Demand {
 }
 
 model Bid {
-  id        Int               @id @default(autoincrement())
-  amount    Int
-  message   String?
-  status    String            @default("pending") // "pending", "accepted", "rejected"
-  demand    Demand            @relation(fields:[demandId], references:[id])
-  demandId  Int
-  seller    User              @relation(fields:[sellerId], references:[id])
-  sellerId  Int
-  createdAt TimestamptzString @default(now())
-  updatedAt TimestamptzString @default(now())
+  id              Int               @id @default(autoincrement())
+  amount          Int
+  message         String?
+  status          String            @default("pending") // "pending", "accepted", "rejected"
+  demand          Demand            @relation(fields:[demandId], references:[id])
+  demandId        Int
+  seller          User              @relation(fields:[sellerId], references:[id])
+  sellerId        Int
+  linkedProduct   Product?          @relation(fields:[linkedProductId], references:[id])
+  linkedProductId Int?
+  createdAt       TimestamptzString @default(now())
+  updatedAt       TimestamptzString @default(now())
 }
 
 model Order {
-  id                 Int                 @id @default(autoincrement())
-  amount             Int
-  status             String              @default("confirmed") // "confirmed", "shipped", "delivered", "cancelled"
-  isPaid             Boolean             @default(false)
-  otpRequired        Boolean             @default(false)
-  professionalSkillId Int?
-  scheduleType       String? // "instant", "today", "tomorrow", "weekly", "monthly"
-  scheduledFor       TimestamptzString?
-  hoursBooked        Int?
-  vehicleType        String? // "2w", "3w", "4w"
-  isFreight          Boolean             @default(false)
-  weightKg           Float?
-  sizeCategory       String? // "small", "medium", "large"
-  pages              Int?
-  copies             Int?
-  isColorPrint       Boolean             @default(false)
-  printFilePath      String?
-  rentalHours        Int?
-  rentalStartOtp     String?
+  id                       Int                 @id @default(autoincrement())
+  amount                   Int
+  status                   String              @default("confirmed") // "confirmed", "shipped", "delivered", "cancelled"
+  isPaid                   Boolean             @default(false)
+  otpRequired              Boolean             @default(false)
+  professionalSkillId      Int?
+  scheduleType             String? // "instant", "today", "tomorrow", "weekly", "monthly"
+  scheduledFor             TimestamptzString?
+  hoursBooked              Int?
+  vehicleType              String? // "2w", "3w", "4w"
+  isFreight                Boolean             @default(false)
+  weightKg                 Float?
+  sizeCategory             String? // "small", "medium", "large"
+  pages                    Int?
+  copies                   Int?
+  isColorPrint             Boolean             @default(false)
+  printFilePath            String?
+  rentalHours              Int?
+  rentalStartOtp           String?
   rentalStartOtpVerifiedAt TimestamptzString?
-  rentalEndOtp       String?
+  rentalEndOtp             String?
   rentalEndOtpVerifiedAt   TimestamptzString?
-  pickupLatitude     Float?
-  pickupLongitude    Float?
-  pickupAddress      String?
-  dropLatitude       Float?
-  dropLongitude      Float?
-  dropAddress        String?
-  rideOtp            String?
-  rideOtpVerifiedAt  TimestamptzString?
-  checkoutOtp        String?
-  checkoutOtpVerifiedAt TimestamptzString?
-  deliveryOtp        String?
-  deliveryOtpVerifiedAt TimestamptzString?
-  orderType          String              @default("bid_order") // "bid_order" or "store_order"
-  demand             Demand?             @relation(fields:[demandId], references:[id])
-  demandId           Int?
-  bid                Bid?                @relation(fields:[bidId], references:[id])
-  bidId              Int?
-  store              Store?              @relation(fields:[storeId], references:[id])
-  storeId            Int?
-  items              OrderItem[]
-  buyer              User                @relation("OrderBuyer", fields:[buyerId], references:[id])
-  buyerId            Int
-  seller             User                @relation("OrderSeller", fields:[sellerId], references:[id])
-  sellerId           Int
-  deliveryMode       String? // "local" or "courier"
-  trackingNumber     String?
-  courierName        String?
-  gstCategory        String?
-  gstRatePercent     Int?
-  gstAmount          Int?
-  commissionAmount   Int?
-  deliveryFeeAmount  Int?
-  deliveryAssignment DeliveryAssignment?
-  returnRequest      ReturnRequest?
-  gstInvoice         GstInvoice?
-  review             Review[]
-  createdAt          TimestamptzString   @default(now())
-  updatedAt          TimestamptzString   @default(now())
+  pickupLatitude           Float?
+  pickupLongitude          Float?
+  pickupAddress            String?
+  dropLatitude             Float?
+  dropLongitude            Float?
+  dropAddress              String?
+  rideOtp                  String?
+  rideOtpVerifiedAt        TimestamptzString?
+  checkoutOtp              String?
+  checkoutOtpVerifiedAt    TimestamptzString?
+  deliveryOtp              String?
+  deliveryOtpVerifiedAt    TimestamptzString?
+  orderType                String              @default("bid_order") // "bid_order" or "store_order"
+  demand                   Demand?             @relation(fields:[demandId], references:[id])
+  demandId                 Int?
+  bid                      Bid?                @relation(fields:[bidId], references:[id])
+  bidId                    Int?
+  store                    Store?              @relation(fields:[storeId], references:[id])
+  storeId                  Int?
+  items                    OrderItem[]
+  buyer                    User                @relation("OrderBuyer", fields:[buyerId], references:[id])
+  buyerId                  Int
+  seller                   User                @relation("OrderSeller", fields:[sellerId], references:[id])
+  sellerId                 Int
+  deliveryMode             String? // "local" or "courier"
+  trackingNumber           String?
+  courierName              String?
+  gstCategory              String?
+  gstRatePercent           Int?
+  gstAmount                Int?
+  commissionAmount         Int?
+  deliveryFeeAmount        Int?
+  deliveryAssignment       DeliveryAssignment?
+  returnRequest            ReturnRequest?
+  gstInvoice               GstInvoice?
+  review                   Review[]
+  createdAt                TimestamptzString   @default(now())
+  updatedAt                TimestamptzString   @default(now())
 }
 
 model Review {
@@ -184,20 +187,21 @@ model WalletTransaction {
 }
 
 model Product {
-  id          Int               @id @default(autoincrement())
-  name        String
-  description String?
-  category    String?
-  price       Int
-  stock       Int               @default(0)
-  isActive    Boolean           @default(true)
-  store       Store             @relation(fields:[storeId], references:[id])
-  storeId     Int
-  orderItems  OrderItem[]
-  favoritedBy Favorite[]
-  ratings     ProductRating[]
-  createdAt   TimestamptzString @default(now())
-  updatedAt   TimestamptzString @default(now())
+  id           Int               @id @default(autoincrement())
+  name         String
+  description  String?
+  category     String?
+  price        Int
+  stock        Int               @default(0)
+  isActive     Boolean           @default(true)
+  store        Store             @relation(fields:[storeId], references:[id])
+  storeId      Int
+  orderItems   OrderItem[]
+  favoritedBy  Favorite[]
+  ratings      ProductRating[]
+  linkedInBids Bid[]
+  createdAt    TimestamptzString @default(now())
+  updatedAt    TimestamptzString @default(now())
 }
 
 model ProductRating {
@@ -290,25 +294,28 @@ model DeliveryTip {
 }
 
 model Store {
-  id               Int               @id @default(autoincrement())
-  seller           User              @relation(fields:[sellerId], references:[id])
-  sellerId         Int
-  name             String
-  address          String?
-  latitude         Float?
-  longitude        Float?
-  deliveryFeeBase  Int               @default(0)
-  deliveryFeePerKm Int               @default(0)
-  offersPrintService Boolean           @default(false)
-  storeAccesses      StoreAccess[]
-  printPricePerPageBw    Int?
-  printPricePerPageColor Int?
-  isActive         Boolean           @default(true)
-  products         Product[]
-  orders           Order[]
-  favoritedBy      Favorite[]
-  createdAt        TimestamptzString @default(now())
-  updatedAt        TimestamptzString @default(now())
+  id                         Int               @id @default(autoincrement())
+  seller                     User              @relation(fields:[sellerId], references:[id])
+  sellerId                   Int
+  name                       String
+  address                    String?
+  latitude                   Float?
+  longitude                  Float?
+  deliveryFeeBase            Int               @default(0)
+  deliveryFeePerKm           Int               @default(0)
+  offersPrintService         Boolean           @default(false)
+  storeAccesses              StoreAccess[]
+  hygienePhotos              HygienePhoto[]
+  printPricePerPageBw        Int?
+  printPricePerPageColor     Int?
+  fssaiLicenseNumber         String?
+  businessRegistrationNumber String?
+  isActive                   Boolean           @default(true)
+  products                   Product[]
+  orders                     Order[]
+  favoritedBy                Favorite[]
+  createdAt                  TimestamptzString @default(now())
+  updatedAt                  TimestamptzString @default(now())
 }
 
 model OrderItem {
@@ -377,6 +384,7 @@ model RazorpayOrderMapping {
   amount          Int
   createdAt       TimestamptzString @default(now())
 }
+
 model ProfessionalSkill {
   id             Int               @id @default(autoincrement())
   professional   User              @relation(fields:[professionalId], references:[id])
@@ -388,6 +396,7 @@ model ProfessionalSkill {
   createdAt      TimestamptzString @default(now())
   updatedAt      TimestamptzString @default(now())
 }
+
 model StoreAccess {
   id                 Int               @id @default(autoincrement())
   store              Store             @relation(fields:[storeId], references:[id])
@@ -397,6 +406,7 @@ model StoreAccess {
   assignedBySellerId Int
   createdAt          TimestamptzString @default(now())
 }
+
 model Task {
   id               Int               @id @default(autoincrement())
   assignedTo       User              @relation("AssignedTasks", fields:[assignedToId], references:[id])
@@ -411,4 +421,61 @@ model Task {
   notes            String?
   createdAt        TimestamptzString @default(now())
   updatedAt        TimestamptzString @default(now())
+}
+
+model Coupon {
+  id             Int                @id @default(autoincrement())
+  code           String             @unique
+  description    String?
+  rewardType     String // "discount" or "cashback"
+  valueType      String // "flat" or "percent"
+  value          Int
+  maxDiscount    Int?
+  minOrderAmount Int?
+  usageLimit     Int?
+  usedCount      Int                @default(0)
+  perUserLimit   Int?               @default(1)
+  isActive       Boolean            @default(true)
+  expiresAt      TimestamptzString?
+  redemptions    CouponRedemption[]
+  createdAt      TimestamptzString  @default(now())
+}
+
+model CouponRedemption {
+  id        Int               @id @default(autoincrement())
+  coupon    Coupon            @relation(fields:[couponId], references:[id])
+  couponId  Int
+  user      User              @relation(fields:[userId], references:[id])
+  userId    Int
+  orderId   Int
+  amount    Int
+  createdAt TimestamptzString @default(now())
+}
+
+model HygienePhoto {
+  id         Int               @id @default(autoincrement())
+  store      Store             @relation(fields:[storeId], references:[id])
+  storeId    Int
+  photoPath  String
+  uploadedAt TimestamptzString @default(now())
+}
+
+model RiskFlag {
+  id         Int               @id @default(autoincrement())
+  entityType String // "user" or "order"
+  entityId   Int
+  reason     String
+  severity   String // "low", "medium", "high"
+  resolved   Boolean           @default(false)
+  createdAt  TimestamptzString @default(now())
+}
+
+model DataRequest {
+  id          Int                @id @default(autoincrement())
+  userId      Int
+  type        String // "export" or "deletion"
+  status      String             @default("pending") // "pending", "completed", "rejected"
+  notes       String?
+  requestedAt TimestamptzString  @default(now())
+  completedAt TimestamptzString?
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { apiFetch } from "./lib/api";
+import Header from "./Header";
 
 interface User {
   id: number;
@@ -51,6 +52,13 @@ const LANDING_TABS: { key: LandingTab; label: string }[] = [
   { key: "ecommerce", label: "E/Q-Commerce" },
   { key: "professionals", label: "Professionals" },
   { key: "logistics", label: "Logistics" },
+];
+
+const LANDING_TAB_PREVIEWS: { key: LandingTab; label: string; blurb: string }[] = [
+  { key: "postdemand", label: "Post a Demand", blurb: "Describe what you need and let sellers bid for your business." },
+  { key: "ecommerce", label: "E/Q-Commerce", blurb: "Shop from nearby stores across food, medicines, electricals, clothes and more." },
+  { key: "professionals", label: "Professionals", blurb: "Book maids, mechanics, tutors, doctors and other local professionals." },
+  { key: "logistics", label: "Logistics", blurb: "Book rides, deliveries, vehicle rentals, and print & document delivery." },
 ];
 
 const DURATIONS = [1, 2, 3, 6, 12, 24];
@@ -173,6 +181,14 @@ export default function HomePage() {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab === "postdemand" || tab === "ecommerce" || tab === "professionals" || tab === "logistics") {
+      setActiveTab(tab);
     }
   }, []);
 
@@ -642,146 +658,10 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-rv-bg hex-grid-bg">
-      <header className="relative flex items-center justify-between border-b border-rv-border px-8 py-5 md:px-16 glass-panel rounded-none hud-scanline">
-        <span className="font-display text-xl font-semibold text-rv-cyan tracking-widest">
-          DEMAND//BOARD
-        </span>
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="rounded-md border border-rv-border p-2 font-body text-rv-text md:hidden"
-          aria-label="Menu"
-        >
-          {mobileMenuOpen ? "✕" : "☰"}
-        </button>
-        <div className={`${mobileMenuOpen ? "flex" : "hidden"} absolute left-0 right-0 top-full z-10 flex-col gap-3 border-b border-rv-border bg-rv-bg p-4 md:static md:z-auto md:flex md:flex-row md:items-center md:gap-4 md:border-0 md:bg-transparent md:p-0`}>
-          {user ? (
-            <>
-              {user.role === "admin" && (
-                <Link
-                  href="/admin"
-                  className="font-body text-sm text-rv-magenta transition hover:text-rv-text"
-                >
-                  Admin
-                </Link>
-              )}
-              {user.role === "co_admin" && (
-                <Link
-                  href="/co-admin"
-                  className="font-body text-sm text-rv-cyan transition hover:text-rv-text"
-                >
-                  Co-Admin
-                </Link>
-              )}
-              {user.role === "co_supplier" && (
-                <Link
-                  href="/co-supplier"
-                  className="font-body text-sm text-rv-cyan transition hover:text-rv-text"
-                >
-                  Stores I manage
-                </Link>
-              )}
-              {user.role === "employee" && (
-                <Link
-                  href="/employee"
-                  className="font-body text-sm text-rv-cyan transition hover:text-rv-text"
-                >
-                  My tasks
-                </Link>
-              )}
-              <Link
-                href="/reviews"
-                className="font-body text-sm text-rv-text-dim transition hover:text-rv-cyan"
-              >
-                Reviews
-              </Link>
-              <Link
-                href="/favorites"
-                className="font-body text-sm text-rv-text-dim transition hover:text-rv-cyan"
-              >
-                Favorites
-              </Link>
-              {user.role === "seller" && (
-                <Link
-                  href="/returns"
-                  className="font-body text-sm text-rv-text-dim transition hover:text-rv-cyan"
-                >
-                  Returns
-                </Link>
-              )}
-              {(user.role === "seller" || user.role === "delivery") && (
-                <Link
-                  href="/kyc"
-                  className="font-body text-sm text-rv-text-dim transition hover:text-rv-cyan"
-                >
-                  Verification
-                </Link>
-              )}
-              {user.role === "seller" && (
-                <Link
-                  href="/store/new"
-                  className="font-body text-sm text-rv-text-dim transition hover:text-rv-cyan"
-                >
-                  Open a store
-                </Link>
-              )}
-              {user.role === "professional" && (
-                <Link
-                  href="/professional/skills"
-                  className="font-body text-sm text-rv-text-dim transition hover:text-rv-cyan"
-                >
-                  My skills
-                </Link>
-              )}
-              {user.role === "delivery" && (
-                <Link
-                  href="/deliveries"
-                  className="font-body text-sm text-rv-text-dim transition hover:text-rv-cyan"
-                >
-                  Deliveries
-                </Link>
-              )}
-              <Link
-                href="/notifications"
-                className="font-body text-sm text-rv-text-dim transition hover:text-rv-cyan"
-              >
-                Notifications
-              </Link>
-              <Link
-                href="/wallet"
-                className="font-body text-sm text-rv-text-dim transition hover:text-rv-cyan"
-              >
-                Wallet
-              </Link>
-              <Link
-                href="/orders"
-                className="font-body text-sm text-rv-text-dim transition hover:text-rv-cyan"
-              >
-                My orders
-              </Link>
-              <Link
-                href="/profile"
-                className="font-body text-sm text-rv-text-dim transition hover:text-rv-cyan"
-              >
-                {user.name} · {user.role}
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="rounded-md border border-rv-border px-3 py-1.5 font-body text-sm text-rv-text transition hover:hud-border hover:text-rv-cyan"
-              >
-                Log out
-              </button>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="rounded-md bg-rv-magenta px-4 py-1.5 font-body text-sm font-medium text-rv-bg shadow-hud-glow-magenta transition hover:opacity-90"
-            >
-              Log in
-            </Link>
-          )}
-        </div>
-      </header>
+      <Header />
 
+      {user ? (
+        <>
       <div className="mx-auto max-w-2xl px-8 pt-8 md:px-16">
         <div className="flex gap-2 overflow-x-auto border-b border-rv-border pb-2">
           {LANDING_TABS.map((tab) => (
@@ -1729,6 +1609,37 @@ export default function HomePage() {
             </section>
           </main>
         </>
+      )}
+        </>
+      ) : (
+        <main className="mx-auto max-w-3xl px-8 py-16 md:px-16">
+          <h1 className="font-display text-3xl font-semibold text-rv-text">
+            Everything you need, in one place
+          </h1>
+          <p className="mt-3 font-body text-sm text-rv-text-dim">
+            Post a demand and let sellers come to you, shop nearby stores, book a professional, or arrange
+            logistics. Log in or sign up to explore the full marketplace.
+          </p>
+
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {LANDING_TAB_PREVIEWS.map((tab) => (
+              <Link
+                key={tab.key}
+                href="/login"
+                className="glass-panel flex flex-col gap-2 p-6 transition hover:hud-border"
+              >
+                <span className="font-display text-lg font-semibold text-rv-cyan">{tab.label}</span>
+                <p className="font-body text-sm text-rv-text-dim">{tab.blurb}</p>
+                <span className="mt-2 font-body text-xs text-rv-magenta">Log in to explore â†’</span>
+              </Link>
+            ))}
+          </div>
+
+          <p className="mt-8 font-body text-sm text-rv-text-dim">
+            New here? <Link href="/signup" className="text-rv-cyan underline">Create an account</Link> to get
+            started.
+          </p>
+        </main>
       )}
     </div>
   );

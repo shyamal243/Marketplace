@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
+import Link from "next/link";
 import { apiFetch } from "../../lib/api";
 
 interface Order {
@@ -294,6 +295,9 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           <p className="mt-2 font-body text-sm text-rv-text-dim">
             Order #{order.id} · {order.isPaid ? "Paid" : "Payment pending"}
           </p>
+          <Link href={`/orders/${order.id}/invoice`} className="mt-1 inline-block font-body text-xs text-rv-cyan underline">
+            View invoice
+          </Link>
 
           {isServiceBooking && (
             <div className="mt-3 rounded-md border border-rv-border bg-rv-panel px-4 py-3">
