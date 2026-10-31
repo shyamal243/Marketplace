@@ -91,7 +91,7 @@ if (process.env.SENTRY_DSN) {
     tracesSampleRate: 0.1,
   });
 }
-const requiredEnvVars = ["JWT_SECRET", "DATABASE_URL", "RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "ORS_API_KEY"];
+const requiredEnvVars = ["JWT_SECRET", "DATABASE_URL", "RAZORPAY_KEY_ID", "RAZORPAY_KEY_SECRET", "RAZORPAY_WEBHOOK_SECRET", "ORS_API_KEY"];
 
 for (const key of requiredEnvVars) {
   if (!process.env[key]) {
@@ -101,6 +101,109 @@ for (const key of requiredEnvVars) {
 }
 const app = express();
 app.set("trust proxy", 1);
+
+type PaymentMapping = {
+  razorpayOrderId: string;
+  purpose: string;
+  referenceId: number;
+  userId: number;
+  amount: number;
+};
+
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  return ab.length === bb.length && crypto.timingSafeEqual(ab, bb);
+}
+
+function verifyRazorpaySignature(orderId: unknown, paymentId: unknown, signature: unknown): boolean {
+  if (typeof orderId !== "string" || typeof paymentId !== "string" || typeof signature !== "string") {
+    return false;
+  }
+  const expected = crypto
+    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+    .update(`${orderId}|${paymentId}`)
+    .digest("hex");
+  return safeEqual(signature, expected);
+}
+
+// Records a payment as processed. Returns false if it was already processed
+// (relies on the unique constraint on razorpayPaymentId, so it is race-safe).
+async function claimPayment(razorpayPaymentId: string): Promise<boolean> {
+  try {
+    await db.orm.public.ProcessedPayment.create({ razorpayPaymentId });
+    return true;
+  } catch (error) {
+    const existing = await db.orm.public.ProcessedPayment.where({ razorpayPaymentId }).first();
+    if (existing) return false;
+    throw error;
+  }
+}
+
+// Applies the effect of a verified payment, based on what the server stored
+// when the Razorpay order was created (never on client-supplied values).
+async function applyMappedPayment(mapping: PaymentMapping) {
+  if (mapping.purpose === "order_payment") {
+    return db.orm.public.Order.where({ id: mapping.referenceId }).update({ isPaid: true });
+  }
+  if (mapping.purpose === "booking_fee") {
+    return db.orm.public.Demand.where({ id: mapping.referenceId }).update({
+      status: "open",
+      bookingFeePaid: true,
+    });
+  }
+  if (mapping.purpose === "wallet_topup") {
+    return db.transaction(async (tx) => {
+      const user = await tx.orm.public.User.where({ id: mapping.userId }).first();
+      if (!user) return null;
+      await tx.orm.public.User.where({ id: user.id }).update({
+        walletBalance: user.walletBalance + mapping.amount,
+      });
+      await tx.orm.public.WalletTransaction.create({
+        amount: mapping.amount,
+        type: "credit",
+        reason: "topup",
+        userId: user.id,
+      });
+      return user.walletBalance + mapping.amount;
+    });
+  }
+  return null;
+}
+
+// Looks up and validates the stored mapping for a client-side payment verification.
+async function loadVerifiedMapping(
+  razorpayOrderId: unknown,
+  razorpayPaymentId: unknown,
+  razorpaySignature: unknown,
+  expected: { purpose: string; referenceId: number; userId: number }
+): Promise<{ mapping?: PaymentMapping; error?: string }> {
+  if (!verifyRazorpaySignature(razorpayOrderId, razorpayPaymentId, razorpaySignature)) {
+    return { error: "Payment verification failed" };
+  }
+  const mapping = await db.orm.public.RazorpayOrderMapping.where({ razorpayOrderId: razorpayOrderId as string }).first();
+  if (
+    !mapping ||
+    mapping.purpose !== expected.purpose ||
+    mapping.referenceId !== expected.referenceId ||
+    mapping.userId !== expected.userId
+  ) {
+    return { error: "Payment does not match this request" };
+  }
+  return { mapping };
+}
+
+const ALLOWED_UPLOAD_TYPES = new Map([
+  ["image/jpeg", [".jpg", ".jpeg"]],
+  ["image/png", [".png"]],
+  ["application/pdf", [".pdf"]],
+]);
+
+const SIGNUP_ROLES = ["buyer", "seller", "worker", "delivery"];
+
+function toPaise(rupees: number): number {
+  return Math.round(rupees * 100);
+}
 const upload = multer({
   storage: multer.diskStorage({
     destination: "uploads/",
@@ -110,6 +213,12 @@ const upload = multer({
     },
   }),
   limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const exts = ALLOWED_UPLOAD_TYPES.get(file.mimetype);
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (exts && exts.includes(ext)) return cb(null, true);
+    cb(new Error("Only JPG, PNG or PDF files are allowed"));
+  },
 });
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -122,13 +231,58 @@ const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID!,
   key_secret: process.env.RAZORPAY_KEY_SECRET!,
 });
-const PORT = 4000;
+const PORT = Number(process.env.PORT) || 4000;
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || "http://localhost:3000").split(",").map((o) => o.trim());
 
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: ALLOWED_ORIGINS,
   credentials: true,
 }));
 app.use(helmet());
+
+// Webhook must be registered BEFORE express.json() so the raw body is preserved
+// for signature verification.
+app.post("/webhooks/razorpay", express.raw({ type: "application/json" }), async (req, res) => {
+  try {
+    const signature = String(req.headers["x-razorpay-signature"] ?? "");
+
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET!)
+      .update(req.body)
+      .digest("hex");
+
+    if (!safeEqual(signature, expectedSignature)) {
+      return res.status(400).json({ error: "Invalid webhook signature" });
+    }
+
+    const event = JSON.parse(req.body.toString());
+
+    if (event.event === "payment.captured") {
+      const razorpayPaymentId = event.payload.payment.entity.id;
+      const razorpayOrderId = event.payload.payment.entity.order_id;
+
+      const mapping = await db.orm.public.RazorpayOrderMapping.where({ razorpayOrderId }).first();
+
+      if (!mapping) {
+        console.error("No mapping found for Razorpay order:", razorpayOrderId);
+        return res.status(200).json({ message: "No mapping found, ignoring" });
+      }
+
+      const claimed = await claimPayment(razorpayPaymentId);
+      if (!claimed) {
+        return res.status(200).json({ message: "Already processed" });
+      }
+
+      await applyMappedPayment(mapping);
+    }
+
+    res.status(200).json({ received: true });
+  } catch (error) {
+    console.error("Webhook processing error:", error);
+    res.status(500).json({ error: "Webhook processing failed" });
+  }
+});
+
 app.use(express.json({ limit: "1mb" }));
 
 
@@ -144,8 +298,16 @@ app.post("/signup", async (req, res) => {
     const { password, name, role } = req.body;
     let { email } = req.body;
 
-    if (!email || !password || !name) {
+    if (typeof email !== "string" || typeof password !== "string" || typeof name !== "string" || !email || !password || !name.trim()) {
       return res.status(400).json({ error: "email, password, and name are required" });
+    }
+
+    if (name.length > 100 || password.length > 72) {
+      return res.status(400).json({ error: "name or password is too long" });
+    }
+
+    if (role !== undefined && !SIGNUP_ROLES.includes(role)) {
+      return res.status(400).json({ error: `role must be one of: ${SIGNUP_ROLES.join(", ")}` });
     }
 
     email = email.trim().toLowerCase();
@@ -201,7 +363,12 @@ app.post("/signup", async (req, res) => {
 app.post("/login", loginLimiter, async (req, res) => {
   try {
     const { password } = req.body;
-    const email = req.body.email?.trim().toLowerCase();
+
+    if (typeof req.body.email !== "string" || typeof password !== "string") {
+      return res.status(400).json({ error: "email and password are required" });
+    }
+
+    const email = req.body.email.trim().toLowerCase();
 
     const user = await db.orm.public.User.where({ email }).first();
 
@@ -406,6 +573,14 @@ app.post("/demands", requireAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: "budget must be a positive number" });
     }
 
+    if (typeof title !== "string" || !title.trim() || title.length > 200) {
+      return res.status(400).json({ error: "title is required (max 200 characters)" });
+    }
+
+    if (description !== undefined && description !== null && (typeof description !== "string" || description.length > 5000)) {
+      return res.status(400).json({ error: "description must be text up to 5000 characters" });
+    }
+
     const allowedDurations = [1, 2, 3, 6, 12, 24];
 
     if (!durationHours || !allowedDurations.includes(durationHours)) {
@@ -459,13 +634,13 @@ app.post("/demands/:id/pay-fee", requireAuth, async (req: AuthRequest, res) => {
     const feeAmount = demand.bookingFeeAmount!;
 
     if (method === "wallet") {
-      const user = await db.orm.public.User.where({ id: req.userId! }).first();
-
-      if (!user || user.walletBalance < feeAmount) {
-        return res.status(400).json({ error: "Insufficient wallet balance" });
-      }
-
       const updatedDemand = await db.transaction(async (tx) => {
+        const user = await tx.orm.public.User.where({ id: req.userId! }).first();
+        const current = await tx.orm.public.Demand.where({ id: demand.id }).first();
+
+        if (!user || user.walletBalance < feeAmount) return "insufficient" as const;
+        if (!current || current.status !== "pending_payment") return "invalid" as const;
+
         await tx.orm.public.User.where({ id: user.id }).update({
           walletBalance: user.walletBalance - feeAmount,
         });
@@ -483,6 +658,13 @@ app.post("/demands/:id/pay-fee", requireAuth, async (req: AuthRequest, res) => {
         });
       });
 
+      if (updatedDemand === "insufficient") {
+        return res.status(400).json({ error: "Insufficient wallet balance" });
+      }
+      if (updatedDemand === "invalid") {
+        return res.status(400).json({ error: "Booking fee already paid or demand not payable" });
+      }
+
       return res.status(200).json(updatedDemand);
 
 
@@ -490,7 +672,7 @@ app.post("/demands/:id/pay-fee", requireAuth, async (req: AuthRequest, res) => {
 
     if (method === "razorpay") {
       const razorpayOrder = await razorpay.orders.create({
-        amount: feeAmount * 100,
+        amount: toPaise(feeAmount),
         currency: "INR",
         receipt: `booking_fee_${demand.id}`,
       });
@@ -533,27 +715,21 @@ app.post("/demands/:id/verify-fee-payment", requireAuth, async (req: AuthRequest
       return res.status(403).json({ error: "You do not own this demand" });
     }
 
-    const generatedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
-      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest("hex");
+    const { mapping, error: mappingError } = await loadVerifiedMapping(razorpayOrderId, razorpayPaymentId, razorpaySignature, {
+      purpose: "booking_fee",
+      referenceId: demand.id,
+      userId: req.userId!,
+    });
 
-    if (generatedSignature !== razorpaySignature) {
-      return res.status(400).json({ error: "Payment verification failed" });
+    if (!mapping) {
+      return res.status(400).json({ error: mappingError });
     }
 
-    const alreadyProcessed = await db.orm.public.ProcessedPayment.where({ razorpayPaymentId }).first();
-
-    if (alreadyProcessed) {
+    if (!(await claimPayment(razorpayPaymentId))) {
       return res.status(400).json({ error: "This payment has already been processed" });
     }
 
-    await db.orm.public.ProcessedPayment.create({ razorpayPaymentId });
-
-    const updatedDemand = await db.orm.public.Demand.where({ id: demand.id }).update({
-      status: "open",
-      bookingFeePaid: true,
-    });
+    const updatedDemand = await applyMappedPayment(mapping);
 
     res.status(200).json(updatedDemand);
   } catch (error) {
@@ -731,6 +907,14 @@ app.post("/bids/:id/accept", requireAuth, async (req: AuthRequest, res) => {
 
     if (demand.buyerId !== req.userId) {
       return res.status(403).json({ error: "You do not own this demand" });
+    }
+
+    if (bid.status !== "pending") {
+      return res.status(400).json({ error: `Cannot accept a bid with status "${bid.status}"` });
+    }
+
+    if (demand.status !== "open") {
+      return res.status(400).json({ error: `Cannot accept a bid on a demand with status "${demand.status}"` });
     }
 
     const gstRate = demand.category
@@ -1421,29 +1605,30 @@ app.post("/orders/:id/cancel", requireAuth, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: `Cannot cancel an order with status "${order.status}"` });
     }
 
-    if (order.isPaid) {
-      const buyer = await db.orm.public.User.where({ id: order.buyerId }).first();
+    const updatedOrder = await db.transaction(async (tx) => {
+      // Re-check status inside the transaction so a repeated/concurrent cancel cannot refund twice.
+      const fresh = await tx.orm.public.Order.where({ id: order.id }).first();
+      if (!fresh || fresh.status !== "confirmed") {
+        return null;
+      }
 
-      if (buyer) {
-        await db.transaction(async (tx) => {
+      if (fresh.isPaid) {
+        const buyer = await tx.orm.public.User.where({ id: fresh.buyerId }).first();
+        if (buyer) {
           await tx.orm.public.User.where({ id: buyer.id }).update({
-            walletBalance: buyer.walletBalance + order.amount,
+            walletBalance: buyer.walletBalance + fresh.amount,
           });
-
           await tx.orm.public.WalletTransaction.create({
-            amount: order.amount,
+            amount: fresh.amount,
             type: "credit",
             reason: "order_cancelled_refund",
             userId: buyer.id,
           });
-        });
+        }
       }
-    }
 
-        if (order.orderType === "store_order") {
-      const items = await db.orm.public.OrderItem.where({ orderId: order.id }).all();
-
-      await db.transaction(async (tx) => {
+      if (fresh.orderType === "store_order") {
+        const items = await tx.orm.public.OrderItem.where({ orderId: fresh.id }).all();
         for (const item of items) {
           const product = await tx.orm.public.Product.where({ id: item.productId }).first();
           if (product) {
@@ -1452,17 +1637,22 @@ app.post("/orders/:id/cancel", requireAuth, async (req: AuthRequest, res) => {
             });
           }
         }
-      });
-    }
+      }
 
-        if (order.commissionAmount && order.commissionAmount > 0) {
-      await db.orm.public.PlatformEarning.create({
-        type: "commission_reversal",
-        amount: -order.commissionAmount,
-        orderId: order.id,
-      });
+      if (fresh.commissionAmount && fresh.commissionAmount > 0) {
+        await tx.orm.public.PlatformEarning.create({
+          type: "commission_reversal",
+          amount: -fresh.commissionAmount,
+          orderId: fresh.id,
+        });
+      }
+
+      return tx.orm.public.Order.where({ id: fresh.id }).update({ status: "cancelled" });
+    });
+
+    if (!updatedOrder) {
+      return res.status(400).json({ error: "Order can no longer be cancelled" });
     }
-    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ status: "cancelled" });
 
     const notifyUserId = isBuyer ? order.sellerId : order.buyerId;
 
@@ -1660,6 +1850,10 @@ app.post("/admin/settings/booking-fee", requireAuth, async (req: AuthRequest, re
 
     const { amount } = req.body;
 
+    if (typeof amount !== "number" || !Number.isFinite(amount) || amount < 0) {
+      return res.status(400).json({ error: "amount must be a non-negative number" });
+    }
+
     const existing = await db.orm.public.PlatformSetting.where({ key: "booking_fee" }).first();
 
     if (existing) {
@@ -1806,12 +2000,12 @@ app.post("/wallet/topup", requireAuth, async (req: AuthRequest, res) => {
   try {
     const { amount } = req.body;
 
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ error: "Amount must be greater than 0" });
+    if (typeof amount !== "number" || !Number.isInteger(amount) || amount <= 0 || amount > 100000) {
+      return res.status(400).json({ error: "Amount must be a whole number between 1 and 100000" });
     }
 
     const razorpayOrder = await razorpay.orders.create({
-      amount: amount * 100,
+      amount: toPaise(amount),
       currency: "INR",
       receipt: `topup_${req.userId}_${Date.now()}`,
     });
@@ -1838,49 +2032,26 @@ app.post("/wallet/topup", requireAuth, async (req: AuthRequest, res) => {
 
 app.post("/wallet/verify-topup", requireAuth, async (req: AuthRequest, res) => {
   try {
-    const { razorpayOrderId, razorpayPaymentId, razorpaySignature, amount } = req.body;
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
 
-    const generatedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
-      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest("hex");
+    const { mapping, error } = await loadVerifiedMapping(razorpayOrderId, razorpayPaymentId, razorpaySignature, {
+      purpose: "wallet_topup",
+      referenceId: req.userId!,
+      userId: req.userId!,
+    });
 
-    if (generatedSignature !== razorpaySignature) {
-      return res.status(400).json({ error: "Payment verification failed" });
+    if (!mapping) {
+      return res.status(400).json({ error });
     }
 
-    const alreadyProcessed = await db.orm.public.ProcessedPayment.where({ razorpayPaymentId }).first();
-
-    if (alreadyProcessed) {
+    if (!(await claimPayment(razorpayPaymentId))) {
       return res.status(400).json({ error: "This payment has already been processed" });
     }
 
-    await db.orm.public.ProcessedPayment.create({ razorpayPaymentId });
-
-    const user = await db.orm.public.User.where({ id: req.userId! }).first();
-
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const newBalance = await db.transaction(async (tx) => {
-      await tx.orm.public.User.where({ id: user.id }).update({
-        walletBalance: user.walletBalance + amount,
-      });
-
-      await tx.orm.public.WalletTransaction.create({
-        amount,
-        type: "credit",
-        reason: "topup",
-        userId: user.id,
-      });
-
-      return user.walletBalance + amount;
-    });
+    // Amount comes from the server-side mapping, never from the client.
+    const newBalance = await applyMappedPayment(mapping);
 
     res.status(200).json({ newBalance });
-
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
@@ -1931,7 +2102,7 @@ app.post("/orders/:id/pay", requireAuth, async (req: AuthRequest, res) => {
     }
 
     const razorpayOrder = await razorpay.orders.create({
-      amount: amountDue * 100,
+      amount: toPaise(amountDue),
       currency: "INR",
       receipt: `order_${order.id}`,
     });
@@ -1972,95 +2143,26 @@ app.post("/orders/:id/verify-payment", requireAuth, async (req: AuthRequest, res
       return res.status(403).json({ error: "You are not the buyer for this order" });
     }
 
-    const generatedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
-      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest("hex");
+    const { mapping, error: mappingError } = await loadVerifiedMapping(razorpayOrderId, razorpayPaymentId, razorpaySignature, {
+      purpose: "order_payment",
+      referenceId: order.id,
+      userId: req.userId!,
+    });
 
-    if (generatedSignature !== razorpaySignature) {
-      return res.status(400).json({ error: "Payment verification failed" });
+    if (!mapping) {
+      return res.status(400).json({ error: mappingError });
     }
 
-    const alreadyProcessed = await db.orm.public.ProcessedPayment.where({ razorpayPaymentId }).first();
-
-    if (alreadyProcessed) {
+    if (!(await claimPayment(razorpayPaymentId))) {
       return res.status(400).json({ error: "This payment has already been processed" });
     }
 
-    await db.orm.public.ProcessedPayment.create({ razorpayPaymentId });
-
-    const updatedOrder = await db.orm.public.Order.where({ id: order.id }).update({ isPaid: true });
+    const updatedOrder = await applyMappedPayment(mapping);
 
     res.status(200).json(updatedOrder);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
-  }
-});
-
-app.post("/webhooks/razorpay", express.raw({ type: "application/json" }), async (req, res) => {
-  try {
-    const signature = req.headers["x-razorpay-signature"] as string;
-
-    const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET!)
-      .update(req.body)
-      .digest("hex");
-
-    if (signature !== expectedSignature) {
-      return res.status(400).json({ error: "Invalid webhook signature" });
-    }
-
-    const event = JSON.parse(req.body.toString());
-
-    if (event.event === "payment.captured") {
-      const razorpayPaymentId = event.payload.payment.entity.id;
-      const razorpayOrderId = event.payload.payment.entity.order_id;
-
-      const alreadyProcessed = await db.orm.public.ProcessedPayment.where({ razorpayPaymentId }).first();
-
-      if (alreadyProcessed) {
-        return res.status(200).json({ message: "Already processed" });
-      }
-
-      const mapping = await db.orm.public.RazorpayOrderMapping.where({ razorpayOrderId }).first();
-
-      if (!mapping) {
-        console.error("No mapping found for Razorpay order:", razorpayOrderId);
-        return res.status(200).json({ message: "No mapping found, ignoring" });
-      }
-
-      await db.orm.public.ProcessedPayment.create({ razorpayPaymentId });
-
-      if (mapping.purpose === "order_payment") {
-        await db.orm.public.Order.where({ id: mapping.referenceId }).update({ isPaid: true });
-      } else if (mapping.purpose === "wallet_topup") {
-        const user = await db.orm.public.User.where({ id: mapping.userId }).first();
-        if (user) {
-          await db.transaction(async (tx) => {
-            await tx.orm.public.User.where({ id: user.id }).update({
-              walletBalance: user.walletBalance + mapping.amount,
-            });
-            await tx.orm.public.WalletTransaction.create({
-              amount: mapping.amount,
-              type: "credit",
-              reason: "topup",
-              userId: user.id,
-            });
-          });
-        }
-      } else if (mapping.purpose === "booking_fee") {
-        await db.orm.public.Demand.where({ id: mapping.referenceId }).update({
-          status: "open",
-          bookingFeePaid: true,
-        });
-      }
-    }
-
-    res.status(200).json({ received: true });
-  } catch (error) {
-    console.error("Webhook processing error:", error);
-    res.status(500).json({ error: "Webhook processing failed" });
   }
 });
 
@@ -2961,6 +3063,14 @@ app.get("/referral/mine", requireAuth, async (req: AuthRequest, res) => {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
+});
+
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err instanceof multer.MulterError || err.message?.startsWith("Only JPG")) {
+    return res.status(400).json({ error: err.message });
+  }
+  console.error(err);
+  res.status(500).json({ error: "Something went wrong" });
 });
 
 app.listen(PORT, () => {
